@@ -1,0 +1,177 @@
+[project]
+name = "api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "alembic>=1.19.2",
+    "anyio>=4.15.1",
+    "argon2-cffi>=25.1.0",
+    "email-validator>=2.3.0",
+    "fastapi[standard]>=0.141.1",
+    "psycopg[binary]>=3.3.5",
+    "pydantic-settings>=2.15.0",
+    "pyjwt>=2.15.1",
+    "sqlalchemy[asyncio]>=2.0.52",
+    "tzdata>=2026.5",
+]
+
+# ============================
+# Lint e formatação (Ruff)
+# ============================
+[tool.ruff]
+line-length = 79
+target-version = "py314"
+fix = true
+show-fixes = true
+indent-width = 4
+exclude = [
+    "venv",
+    ".venv",
+    "env",
+    ".env",
+    "__pycache__",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".mypy_cache",
+]
+
+[tool.ruff.lint]
+preview = true
+select = ["I", "F", "E", "W", "PL", "PT", "FAST"]
+
+[tool.ruff.format]
+preview = true
+# Markdown fica fora da formatação: os blocos Python dos documentos
+# normativos (docs/, PROMPTS/, CLAUDE.md) são protegidos (DEC-MV-26).
+exclude = ["*.md"]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint.isort]
+# Ensina ao Ruff qual é o pacote principal do seu projeto.
+# Deve ser o mesmo nome da pasta dentro de 'src/'.
+known-first-party = ["api_gestao_pessoal"]
+
+[tool.ruff.lint.per-file-ignores]
+# Asserções de teste comparam contra valores esperados literais (ex:
+# contagens); não há constante nomeada sensata para extrair aqui.
+"tests/*" = ["PLR2004"]
+# O env.py importa as Settings dentro de obter_url() para só ler o
+# ambiente quando a URL não vem de config.attributes (ACH-MV-F1-005).
+"alembic/env.py" = ["PLC0415"]
+
+
+# ============================
+# Tipagem (Pyright)
+# ============================
+[tool.pyright]
+typeCheckingMode = "standard"
+pythonVersion = "3.14"
+include = ["src", "tests", "alembic"]
+exclude = [
+    "**/venv",
+    "**/.venv",
+    "**/env",
+    "**/.env",
+    "**/node_modules",
+    "**/__pycache__",
+]
+venv = ".venv"
+venvPath = "."
+
+[[tool.pyright.executionEnvironments]]
+root = "src"
+
+# factory_boy não publica stubs/py.typed: seus re-exports em
+# `factory/__init__.py` disparam falso positivo de import privado, e
+# o padrão `class Meta` (documentado pela própria lib) colide com o
+# checador estrutural do Pyright em reportIncompatibleVariableOverride.
+[[tool.pyright.executionEnvironments]]
+root = "tests"
+reportPrivateImportUsage = "none"
+reportIncompatibleVariableOverride = "none"
+
+# ============================
+# Testes (Pytest)
+# ============================
+[tool.pytest.ini_options]
+addopts = "-s --color=yes --tb=short -m 'not performance'"
+markers = [
+    "performance: teste de orçamento de tempo com volume grande; fora da suíte padrão",
+    "concorrencia: teste com transações concorrentes em conexões independentes",
+]
+# Adiciona 'src' ao path do Python durante os testes. Isso permite que
+# os testes em `tests/` importem os módulos de `src/` sem erros.
+pythonpath = ["src"]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+
+# ============================
+# Build e Setuptools
+# ============================
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-xdist",
+    "pyright",
+    "ruff",
+    "pytest-asyncio",
+    "taskipy",
+    "testcontainers[postgres]",
+    "httpx>=0.28.1",
+]
+
+[tool.setuptools.packages.find]
+# Informa ao setuptools para encontrar os pacotes dentro da pasta 'src'.
+# Essencial para a estrutura de layout com 'src/'.
+where = ["src"]
+
+[tool.setuptools]
+# Mapeia o diretório raiz de pacotes para 'src'.
+package-dir = { "" = "src" }
+
+
+[tool.coverage.run]
+source = ["src/api_gestao_pessoal"]
+branch = true
+omit = ["tests/*", "alembic/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+
+
+[tool.taskipy.tasks]
+
+lint = "ruff check . --fix"
+format = "ruff format ."
+pyright = "pyright"
+
+pre_test = "task lint"
+test = "pytest -x -s --cov=api_gestao_pessoal -vv"
+post_test = "coverage html"
+
+coverage = 'explorer.exe "$(wslpath -w htmlcov/index.html)"'
+
+#Uvicorn
+serve = "uvicorn api_gestao_pessoal.main:app --host 0.0.0.0 --port 8000"
+
+# Alembic
+migrate = "alembic upgrade head"
+makemigrations = "alembic revision --autogenerate"
+
+# Docker
+downgrade = "alembic downgrade -1"
+docker = "docker compose up --build"
+docker_down = "docker compose down"
