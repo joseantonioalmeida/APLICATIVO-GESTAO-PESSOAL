@@ -13,6 +13,10 @@ flutter pub get
 flutter run --dart-define=API_URL=http://SEU_IP:8000      # aparelho físico / desktop / web
 flutter run                                                 # emulador Android (usa http://10.0.2.2:8000)
 ```
+- **No navegador (o caminho mais simples no WSL):** adicione ao `API/.env` a linha
+  `CORS_ORIGENS=["http://localhost:3000"]`, reinicie a API e rode
+  `flutter run -d web-server --web-port 3000 --dart-define=API_URL=http://localhost:8000`;
+  depois abra `http://localhost:3000` no navegador do Windows.
 - Sem `API_URL`: Android → `http://10.0.2.2:8000`; demais plataformas → `http://localhost:8000`.
 - O fuso do cadastro é deduzido do aparelho (Brasil); para forçar: `--dart-define=FUSO_HORARIO=America/Sao_Paulo`.
 - A sessão fica só em memória: o login é pedido a cada abertura do aplicativo.
