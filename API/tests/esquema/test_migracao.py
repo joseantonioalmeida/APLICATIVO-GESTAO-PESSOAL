@@ -7,7 +7,7 @@ from sqlalchemy import Connection, text
 from alembic import command
 
 from ..apoio.esquema import consultar
-from ..apoio.migracoes import REVISAO_INICIAL
+from ..apoio.migracoes import REVISAO_ATUAL, REVISAO_INICIAL
 
 TABELAS_DOMINIO = {
     "usuario",
@@ -101,7 +101,7 @@ def test_upgrade_head_cria_esquema_em_banco_vazio(
         versoes = consultar(
             banco_migrado, "SELECT version_num FROM alembic_version"
         )
-        assert versoes == [(REVISAO_INICIAL,)]
+        assert versoes == [(REVISAO_ATUAL,)]
     finally:
         command.upgrade(config_migracao, "head")
 
@@ -144,7 +144,7 @@ def test_seeds_idempotentes(
     versoes = consultar(
         banco_migrado, "SELECT version_num FROM alembic_version"
     )
-    assert versoes == [(REVISAO_INICIAL,)]
+    assert versoes == [(REVISAO_ATUAL,)]
     assert _contagens(banco_migrado) == (6, 8, 16)
 
     script = ScriptDirectory.from_config(config_migracao).get_revision(
@@ -173,7 +173,7 @@ def test_downgrade_base_e_upgrade_head(
         versoes = consultar(
             banco_migrado, "SELECT version_num FROM alembic_version"
         )
-        assert versoes == [(REVISAO_INICIAL,)]
+        assert versoes == [(REVISAO_ATUAL,)]
         assert _contagens(banco_migrado) == (6, 8, 16)
     finally:
         command.upgrade(config_migracao, "head")

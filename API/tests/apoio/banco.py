@@ -28,6 +28,26 @@ TABELAS_DOMINIO = (
 )
 
 
+class ContainerLocal:
+    """Substituto de `PostgresContainer` para um Postgres já em execução.
+
+    Ativado por `TESTE_POSTGRES_URL` (ex.: ambiente sem Docker). O banco
+    precisa se chamar `minhavida_teste` e ser descartável.
+    """
+
+    def __init__(self, url: str) -> None:
+        self._url = make_url(url)
+
+    def get_container_host_ip(self) -> str:
+        return str(self._url.host)
+
+    def get_exposed_port(self, _porta: int) -> int:
+        return int(self._url.port or PORTA_POSTGRES)
+
+    def get_connection_url(self) -> str:
+        return self._url.render_as_string(hide_password=False)
+
+
 def garantir_banco_descartavel(url: str, container: PostgresContainer) -> None:
     """Recusa qualquer alvo que não seja o container de teste."""
     alvo = make_url(url)

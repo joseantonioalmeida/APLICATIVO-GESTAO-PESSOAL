@@ -24,6 +24,9 @@ TAMANHO_MAXIMO_NOME = 150
 TAMANHO_MAXIMO_TOKEN_REDEFINICAO = 128
 PADRAO_DATA_CIVIL = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 PADRAO_CODIGO = re.compile(r"[0-9]{8}")
+# Controle (Cc) e separadores de linha/parágrafo Unicode (Zl, Zp): quebrariam
+# o cabeçalho "Assunto" do e-mail de recuperação (ACH-MV-F3-002).
+CATEGORIAS_PROIBIDAS_NOME = frozenset({"Cc", "Zl", "Zp"})
 
 MENSAGEM_EMAIL_INVALIDO = "Informe um e-mail válido"
 MENSAGEM_SENHA_FRACA = (
@@ -75,7 +78,7 @@ def _nome_completo(valor: object) -> str:
         raise PydanticCustomError(
             "NOME_COMPLETO_OBRIGATORIO", MENSAGEM_NOME_OBRIGATORIO
         )
-    if any(unicodedata.category(c) == "Cc" for c in nome):
+    if any(unicodedata.category(c) in CATEGORIAS_PROIBIDAS_NOME for c in nome):
         raise PydanticCustomError(
             "NOME_COMPLETO_INVALIDO", MENSAGEM_NOME_INVALIDO
         )

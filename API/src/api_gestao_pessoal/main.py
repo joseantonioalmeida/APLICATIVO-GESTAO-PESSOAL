@@ -11,7 +11,15 @@ from api_gestao_pessoal.rastreamento import (
     configurar_logging,
     middleware_id_requisicao,
 )
-from api_gestao_pessoal.routers import autenticacao, saude, usuarios
+from api_gestao_pessoal.routers import (
+    atividades,
+    autenticacao,
+    categorias,
+    financeiro,
+    importancias,
+    saude,
+    usuarios,
+)
 from api_gestao_pessoal.seguranca import HasherSenha, ParametrosArgon2
 from api_gestao_pessoal.settings import Settings, obter_settings
 
@@ -50,6 +58,10 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(saude.router)
     app.include_router(autenticacao.router, prefix="/api/v1")
     app.include_router(usuarios.router, prefix="/api/v1")
+    app.include_router(categorias.router, prefix="/api/v1")
+    app.include_router(atividades.router, prefix="/api/v1")
+    app.include_router(financeiro.router, prefix="/api/v1")
+    app.include_router(importancias.router, prefix="/api/v1")
     return app
 
 

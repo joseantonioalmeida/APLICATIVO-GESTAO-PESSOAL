@@ -3,7 +3,7 @@
 | Campo | Valor |
 | --- | --- |
 | Documento | `docs/arquitetura/plano_fases_api.md` |
-| Estado | PROPOSTO. F1 **`APROVADO_COM_P3`** e integrada no commit `90412ec` (G6 cumprido em 2026-10-13). F2 **`APROVADO_COM_P3`** na auditoria de 2026-10-13 e integrada no commit `91be324` (G6 cumprido em 2026-10-13). F3 com decisões aprovadas em 2026-10-13 (DEC-MV-09 a 13 e DEC-MV-14 em escopo limitado) e Prompt F3 em `PRONTO_PARA_ETAPA_A`. Demais fases dependem das decisões pendentes |
+| Estado | F1 a F8 IMPLEMENTADAS (F4 a F8 em 2026-11-04, por decisão autônoma do implementador a pedido do usuário; ver `decisoes_f4_f5.md` e `decisoes_f6_f8.md`). F9 a F11 pendentes. Histórico: PROPOSTO. F1 **`APROVADO_COM_P3`** e integrada no commit `90412ec` (G6 cumprido em 2026-10-13). F2 **`APROVADO_COM_P3`** na auditoria de 2026-10-13 e integrada no commit `91be324` (G6 cumprido em 2026-10-13). F3 com decisões aprovadas em 2026-10-13 (DEC-MV-09 a 13 e DEC-MV-14 em escopo limitado) e Prompt F3 em `PRONTO_PARA_ETAPA_A`. Demais fases dependem das decisões pendentes |
 | Data | 2026-10-10. Atualizado em 2026-10-11 (nome da F8, escopo financeiro, gates da F1 e da F5) e em 2026-10-13 (estado da F1, P-DOC-07; G6 da F1 e preparação da F2; auditoria e fechamento documental da F2; G6 da F2 e preparação da F3; decisões da F3 e ficha atualizada pelo PF-1) |
 | Relacionados | ADR-0001, ADR-0002, `arquitetura_api_minhavida.md`, `plano_validacao_auditoria.md`, `matriz_requisitos_api.md` |
 
@@ -51,12 +51,12 @@ Ordem de execução (sequencial, uma fase por vez): F1 → F2 → F3 → F4 → 
 | F0 | Arquitetura e reconciliação | — | ENTREGUE PARA REVISÃO (documentos desta sessão) |
 | F1 | Fundação técnica | DEC-MV-01 a 05, DEC-MV-25 e DEC-MV-26 (**aprovadas** em 2026-10-11) | **`APROVADO_COM_P3`** (reauditoria de 2026-10-11). **Integrada** no commit `90412ec4b9ecb6594e0b9e571c1dbba0bb1a4a30` (G6 cumprido em 2026-10-13). P3 ACH-MV-F1-005, 006 e 007 encerrados em 2026-10-13, com as evidências da auditoria da F2 (`indice.md` §4, M13) |
 | F2 | Esquema de dados | DEC-MV-06, 07, 08 e ACH-MV-F1-005, opção A (**aprovadas** em 2026-10-13). `CLAUDE.md` atualizado em 2026-10-13 | **`APROVADO_COM_P3`** na auditoria de 2026-10-13 (`docs/auditorias/AUDITORIA_F2_ESQUEMA_DADOS.md`). **Integrada** no commit `91be324c88c5a3f99a49b1b1700963e32ef257e9` (G6 cumprido em 2026-10-13). P3: ACH-MV-F2-001 e 003 encerrados; ACH-MV-F2-002 encerrado na preparação da F3. Histórico: Prompt F2 em `PRONTO_PARA_ETAPA_A` em 2026-10-13 |
-| F3 | Identidade e acesso | DEC-MV-09 a 13 e DEC-MV-14 no escopo limitado da F3 (travas de linha da recuperação) (**aprovadas** em 2026-10-13, M16) | **`PRONTO_PARA_ETAPA_A`.** Prompt `PROMPTS/PROMPT_MASTER_SONNET_5_F3_IDENTIDADE_ACESSO.md`, derivado do dossiê `docs/arquitetura/preparacao_f3_identidade_acesso.md`. Baseline técnico: commit `91be324`. Implementação depende da Etapa A e do “pode implementar” |
-| F4 | Núcleo transacional | DEC-MV-14, 15 | AGUARDANDO_DECISAO |
-| F5 | Atividades e recorrência | DEC-MV-16 e DEC-MV-24 | AGUARDANDO_DECISAO |
-| F6 | Financeiro | DEC-MV-17 | AGUARDANDO_DECISAO |
-| F7 | Importâncias | DEC-MV-18, 19 | AGUARDANDO_DECISAO |
-| F8 | Vínculo interno entre despesas e importâncias | (decisões de F6/F7) | PROPOSTO |
+| F3 | Identidade e acesso | DEC-MV-09 a 13 e DEC-MV-14 (escopo limitado) (**aprovadas** em 2026-10-13, M16) | **`APROVADO_COM_P3`** (auditoria de 2026-10-13). **Integrada** no commit de reorganização `c8a937a` (G6 cumprido). P3: ACH-MV-F3-001 verificado (SHA-256 `46c49e0d…` confere); ACH-MV-F3-002 **corrigido** em 2026-11-04 (nome recusa também `Zl` e `Zp`); ACH-MV-F3-003 é só de processo |
+| F4 | Núcleo transacional | DEC-MV-14 (integral) e 15 | **IMPLEMENTADA** em 2026-11-04 (commit `b635edd`). Decisões em `decisoes_f4_f5.md`. 267 testes |
+| F5 | Atividades e recorrência | DEC-MV-16 e DEC-MV-24 | **IMPLEMENTADA** em 2026-11-04 (commit `b635edd`) |
+| F6 | Financeiro | DEC-MV-17 | **IMPLEMENTADA** em 2026-11-04. Decisões em `decisoes_f6_f8.md` |
+| F7 | Importâncias | DEC-MV-18, 19 | **IMPLEMENTADA** em 2026-11-04, com a migração `0002` (DESATIVADO) |
+| F8 | Vínculo interno entre despesas e importâncias | (decisões de F6/F7) | **IMPLEMENTADA** em 2026-11-04 |
 | F9 | Lembretes e notificações | DEC-MV-20 | AGUARDANDO_DECISAO |
 | F10 | Painel inicial | (decisões anteriores) | PROPOSTO |
 | F11 | Consolidação operacional | DEC-MV-21 (produção) | AGUARDANDO_DECISAO |

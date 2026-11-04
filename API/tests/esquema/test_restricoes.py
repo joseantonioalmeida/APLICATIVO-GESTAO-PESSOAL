@@ -559,6 +559,7 @@ def test_situacao_e_envio_do_lembrete(conexao: Connection) -> None:
         ("ENVIADO", None),
         ("PENDENTE", MOMENTO),
         ("CANCELADO", MOMENTO),
+        ("DESATIVADO", MOMENTO),
     )
     for situacao, enviado_em in invalidos:
         esperar_violacao(
@@ -584,6 +585,13 @@ def test_situacao_e_envio_do_lembrete(conexao: Connection) -> None:
         a,
         inserir_importancia(conexao, a),
         situacao="CANCELADO",
+        enviado_em=None,
+    )
+    inserir_lembrete(
+        conexao,
+        a,
+        inserir_importancia(conexao, a),
+        situacao="DESATIVADO",
         enviado_em=None,
     )
 

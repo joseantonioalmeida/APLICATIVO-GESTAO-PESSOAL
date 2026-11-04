@@ -240,3 +240,15 @@ Atualizado em 2026-10-13 (liberação da F3, M16). Histórico: a lista anterior,
 2. Enviar `PROMPTS/PROMPT_MASTER_SONNET_5_F3_IDENTIDADE_ACESSO.md` ao Sonnet com o SHA-256 da mensagem de entrega, autorizando **somente a Etapa A**.
 3. Trazer o relatório da Etapa A. A Etapa B depende do seu “pode implementar”.
 4. Antes da F5: decidir DEC-MV-24. Opcional: encerrar formalmente o ACH-MV-ARQ-019 e restaurar as linhas truncadas do `CLAUDE.md` (ACH-MV-ARQ-012).
+
+---
+
+## Atualização de 2026-11-04 (F3 fechada; F4 a F8 implementadas)
+
+Por instrução expressa do usuário (decidir de forma independente a partir de `docs/` e `PROMPTS/`, sem novo ciclo de Prompt Master e auditoria):
+
+- **F3:** G6 cumprido no commit `c8a937a`; ACH-MV-F3-001 verificado (hash confere) e ACH-MV-F3-002 corrigido. Detalhes em `decisoes_f6_f8.md` §1.
+- **F4 e F5:** implementadas (commit `b635edd`). DEC-MV-14 (integral), 15, 16 e 24 resolvidas em `decisoes_f4_f5.md`.
+- **F6, F7 e F8:** implementadas. DEC-MV-17, 18 e 19 resolvidas em `decisoes_f6_f8.md`. Nova migração `0002` (`DESATIVADO`); a cabeça do Alembic passa a ser `0002`.
+- Novos documentos: `decisoes_f4_f5.md` e `decisoes_f6_f8.md`. Novo código de suporte: `services/consulta_movimentacoes.py`.
+- **Pendentes:** DEC-MV-20 e 21, F9 (processador de lembretes e notificações), F10 (painel) e F11 (consolidação). Estas fases não passaram por auditoria independente.

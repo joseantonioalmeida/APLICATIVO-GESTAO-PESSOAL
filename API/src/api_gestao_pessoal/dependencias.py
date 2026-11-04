@@ -1,9 +1,10 @@
 """Dependências HTTP: relógio, recursos da aplicação e contexto (§8.10)."""
 
+import re
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import Depends, Request, Response
+from fastapi import Depends, Header, Request, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from api_gestao_pessoal.database import SessaoDep
@@ -96,3 +97,20 @@ async def obter_contexto(
 
 
 ContextoDep = Annotated[ContextoUsuario, Depends(obter_contexto)]
+
+
+PADRAO_CHAVE_IDEMPOTENCIA = re.compile(r"[A-Za-z0-9_-]{16,64}")
+
+
+def obter_chave_idempotencia(
+    chave: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
+) -> str:
+    """`Idempotency-Key` obrigatória e no formato do contrato (§4.3)."""
+    if chave is None:
+        raise ErroNegocio(CodigoErro.IDEMPOTENCIA_CHAVE_AUSENTE)
+    if not PADRAO_CHAVE_IDEMPOTENCIA.fullmatch(chave):
+        raise ErroNegocio(CodigoErro.IDEMPOTENCIA_CHAVE_INVALIDA)
+    return chave
+
+
+ChaveIdempotenciaDep = Annotated[str, Depends(obter_chave_idempotencia)]

@@ -57,6 +57,7 @@ class SituacaoLembrete(enum.StrEnum):
     PENDENTE = "PENDENTE"
     ENVIADO = "ENVIADO"
     CANCELADO = "CANCELADO"
+    DESATIVADO = "DESATIVADO"
 
 
 class SituacaoRequisicao(enum.StrEnum):

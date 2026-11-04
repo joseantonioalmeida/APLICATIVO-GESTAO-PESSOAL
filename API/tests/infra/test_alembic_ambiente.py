@@ -8,7 +8,7 @@ from sqlalchemy.pool import NullPool
 
 from alembic import command
 
-from ..apoio.migracoes import REVISAO_INICIAL
+from ..apoio.migracoes import REVISAO_ATUAL
 
 RAIZ = Path(__file__).resolve().parents[2]
 ALEMBIC_INI = RAIZ / "alembic.ini"
@@ -24,7 +24,7 @@ def _config(url: str) -> Config:
 def test_upgrade_head_com_revisao_inicial(url_banco_teste: str) -> None:
     cfg = _config(url_banco_teste)
     command.upgrade(cfg, "head")
-    assert ScriptDirectory.from_config(cfg).get_heads() == [REVISAO_INICIAL]
+    assert ScriptDirectory.from_config(cfg).get_heads() == [REVISAO_ATUAL]
     command.check(cfg)
 
 

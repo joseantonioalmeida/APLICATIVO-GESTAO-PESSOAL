@@ -1,7 +1,8 @@
+import os
 import secrets
 from collections.abc import AsyncIterator, Callable, Iterator
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import override
+from typing import cast, override
 
 import httpx
 import pytest
@@ -17,7 +18,11 @@ from testcontainers.community.postgres import PostgresContainer
 from alembic import command
 from api_gestao_pessoal.settings import Settings
 
-from .apoio.banco import NOME_BANCO_TESTE, garantir_banco_descartavel
+from .apoio.banco import (
+    NOME_BANCO_TESTE,
+    ContainerLocal,
+    garantir_banco_descartavel,
+)
 from .apoio.migracoes import config_alembic
 
 IMAGEM_POSTGRES = "postgres:15-alpine"
@@ -30,6 +35,10 @@ FabricaCliente = Callable[
 
 @pytest.fixture(scope="session")
 def container_postgres() -> Iterator[PostgresContainer]:
+    url_local = os.environ.get("TESTE_POSTGRES_URL")
+    if url_local:
+        yield cast(PostgresContainer, ContainerLocal(url_local))
+        return
     with PostgresContainer(
         IMAGEM_POSTGRES,
         username="minhavida",
