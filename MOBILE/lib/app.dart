@@ -26,6 +26,15 @@ class _MinhaVidaAppState extends State<MinhaVidaApp> {
   final _dados = BarramentoDados();
   late bool _logado = widget.repositorio.usuario != null;
 
+  @override
+  void initState() {
+    super.initState();
+    // Token recusado pelo servidor: volta ao login.
+    widget.repositorio.aoSessaoExpirada = () {
+      if (mounted && _logado) _sair();
+    };
+  }
+
   void _entrar() {
     _navigatorKey.currentState?.popUntil((r) => r.isFirst);
     _navegacao.irPara(Aba.inicio);

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -48,6 +49,7 @@ Future<RepositorioMemoria> abrirApp(
   final repo = RepositorioMemoria(
     relogio: relogioFixo,
     demonstracao: demonstracao,
+    aleatorio: Random(7), // código de recuperação previsível nos goldens
   );
   if (logado) await repo.entrar('julio@email.com', 'Senha@123');
   await tester.pumpWidget(

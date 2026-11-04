@@ -2,10 +2,14 @@ import '../models/modelos.dart';
 
 /// Contrato de dados do aplicativo.
 ///
-/// Hoje é implementado por [RepositorioMemoria] (dados locais de demonstração).
-/// Quando a API estiver pronta, basta criar uma implementação HTTP desta
-/// interface e trocá-la em `main.dart`: nenhuma tela precisa mudar.
+/// Implementações: [RepositorioApi] (API MinhaVida, padrão) e
+/// [RepositorioMemoria] (dados locais de demonstração, sem servidor).
+/// A escolha é feita em `main.dart`; nenhuma tela depende da implementação.
 abstract class Repositorio {
+  /// Chamado quando o servidor recusa a sessão (token expirado ou inválido).
+  /// O aplicativo volta para a tela de login.
+  void Function()? aoSessaoExpirada;
+
   // ------------------------------------------------------------------ Conta
   Usuario? get usuario;
 
