@@ -418,6 +418,41 @@ Future<T?> escolherOpcao<T>(
   );
 }
 
+/// Máscara monetária: o usuário digita só números e o campo mostra
+/// "1.621,00" (os dois últimos dígitos são os centavos). Aceita até
+/// 15 dígitos (trilhões de reais) sem estourar o limite de inteiros.
+class MascaraMoeda extends TextInputFormatter {
+  static const maxDigitos = 15;
+
+  static String formatar(String digitos) {
+    var d = digitos.replaceFirst(RegExp(r'^0+'), '');
+    if (d.isEmpty) return '';
+    d = d.padLeft(3, '0');
+    final inteiro = d.substring(0, d.length - 2);
+    final centavos = d.substring(d.length - 2);
+    final b = StringBuffer();
+    for (var i = 0; i < inteiro.length; i++) {
+      if (i > 0 && (inteiro.length - i) % 3 == 0) b.write('.');
+      b.write(inteiro[i]);
+    }
+    return '$b,$centavos';
+  }
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue antigo,
+    TextEditingValue novo,
+  ) {
+    var d = novo.text.replaceAll(RegExp(r'\D'), '');
+    if (d.length > maxDigitos) d = d.substring(0, maxDigitos);
+    final t = formatar(d);
+    return TextEditingValue(
+      text: t,
+      selection: TextSelection.collapsed(offset: t.length),
+    );
+  }
+}
+
 /// Máscara DD/MM/AAAA.
 class MascaraData extends TextInputFormatter {
   @override
@@ -626,9 +661,7 @@ class CampoValor extends StatelessWidget {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                  ],
+                  inputFormatters: [MascaraMoeda()],
                   cursorColor: Cores.primaria,
                   style: Txt.corpo.copyWith(
                     fontSize: tam,
