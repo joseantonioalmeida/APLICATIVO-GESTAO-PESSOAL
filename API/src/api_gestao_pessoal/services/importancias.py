@@ -318,6 +318,28 @@ def montar_item(linha: Any, hoje: date) -> ImportanciaItem:  # noqa: ANN401
     )
 
 
+async def _com_periodicidade(
+    sessao: AsyncSession, itens: list[ImportanciaItem]
+) -> list[ImportanciaItem]:
+    """Preenche a repetição dos itens recorrentes (uma consulta só)."""
+    ids = [i.id for i in itens if i.recorrente]
+    if not ids:
+        return itens
+    linhas = (
+        await sessao.execute(
+            select(Importancia.id, SerieImportancia.periodicidade)
+            .join(
+                SerieImportancia, SerieImportancia.id == Importancia.serie_id
+            )
+            .where(Importancia.id.in_(ids))
+        )
+    ).all()
+    por_id = {i: _periodicidade_api(p) for i, p in linhas}
+    for item in itens:
+        item.periodicidade = por_id.get(item.id, item.periodicidade)
+    return itens
+
+
 async def detalhe(
     sessao: AsyncSession, contexto: ContextoUsuario, importancia_id: uuid.UUID
 ) -> ImportanciaDetalhe:
@@ -335,7 +357,9 @@ async def detalhe(
         raise ErroNegocio(CodigoErro.RECURSO_NAO_ENCONTRADO)
     linha_t: Any = linha
     imp: Importancia = linha_t[0]
-    base = montar_item(linha_t, contexto.hoje)
+    (base,) = await _com_periodicidade(
+        sessao, [montar_item(linha_t, contexto.hoje)]
+    )
     lembrete = await lembretes.obter(sessao, imp.id)
     serie: SerieImportanciaResposta | None = None
     if imp.serie_id is not None:
@@ -834,7 +858,7 @@ async def consultar(
             else "Mês selecionado"
         )
     return ConsultaImportanciasResposta(
-        itens=itens,
+        itens=await _com_periodicidade(sessao, itens),
         proximo_cursor=proximo,
         filtro=f.filtro,
         mes=texto_mes,
@@ -1351,7 +1375,9 @@ async def _proximas_do_painel(
             )
         )
     ).all()
-    return [montar_item(linha, hoje) for linha in linhas]
+    return await _com_periodicidade(
+        sessao, [montar_item(linha, hoje) for linha in linhas]
+    )
 
 
 async def resumo_painel(

@@ -343,6 +343,26 @@ def _item(atividade: Atividade, categoria_nome: str) -> AtividadeItem:
     )
 
 
+async def _com_periodicidade(
+    sessao: AsyncSession, itens: list[AtividadeItem]
+) -> list[AtividadeItem]:
+    """Preenche a repetição dos itens recorrentes (uma consulta só)."""
+    ids = [i.id for i in itens if i.recorrente]
+    if not ids:
+        return itens
+    linhas = (
+        await sessao.execute(
+            select(Atividade.id, SerieAtividade.periodicidade)
+            .join(SerieAtividade, SerieAtividade.id == Atividade.serie_id)
+            .where(Atividade.id.in_(ids))
+        )
+    ).all()
+    por_id = {i: _periodicidade_api(p) for i, p in linhas}
+    for item in itens:
+        item.periodicidade = por_id.get(item.id, item.periodicidade)
+    return itens
+
+
 async def _detalhe(
     sessao: AsyncSession, atividade: Atividade
 ) -> AtividadeDetalhe:
@@ -367,6 +387,8 @@ async def _detalhe(
                 numero_final=s.numero_final,
             )
     base = _item(atividade, categoria_nome or "")
+    if serie is not None:
+        base.periodicidade = serie.periodicidade
     return AtividadeDetalhe(
         **base.model_dump(),
         descricao=atividade.descricao,
@@ -571,7 +593,9 @@ async def consultar(
             _chaves_da_linha(f.ordenacao, ultima[0], ultima[2], ultima[3]),
         )
     return ConsultaAtividadesResposta(
-        itens=[_item(linha[0], linha[1]) for linha in pagina],
+        itens=await _com_periodicidade(
+            sessao, [_item(linha[0], linha[1]) for linha in pagina]
+        ),
         proximo_cursor=proximo,
         data=f.data,
         eh_hoje=f.data == contexto.hoje,
@@ -708,7 +732,9 @@ async def resumo_do_dia(
     return (
         int(total),
         int(concluidas),
-        [_item(atividade, nome) for atividade, nome in linhas],
+        await _com_periodicidade(
+            sessao, [_item(atividade, nome) for atividade, nome in linhas]
+        ),
     )
 
 

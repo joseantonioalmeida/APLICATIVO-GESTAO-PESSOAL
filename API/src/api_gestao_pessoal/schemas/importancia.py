@@ -215,6 +215,9 @@ class ImportanciaItem(BaseModel):
     prazo: Prazo | None
     recorrente: bool
     grupo: GrupoImportancia
+    periodicidade: PeriodicidadeImportanciaApi = (
+        PeriodicidadeImportanciaApi.NAO_REPETIR
+    )
 
 
 class LembreteResposta(BaseModel):

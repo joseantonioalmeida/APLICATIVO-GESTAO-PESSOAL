@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     SMTP_SENHA: SecretStr | None = None
     SMTP_REMETENTE: str | None = None
     SMTP_TIMEOUT_S: float = Field(default=10, gt=0, le=30)
+    CORS_ORIGENS: list[str] = Field(default_factory=list)
     LEMBRETES_INTERVALO_S: int = Field(default=60, ge=1, le=3600)
     LEMBRETES_LOTE: int = Field(default=100, ge=1, le=10000)
     LEMBRETES_JANELA_DIAS: int = Field(default=8, ge=1, le=60)
