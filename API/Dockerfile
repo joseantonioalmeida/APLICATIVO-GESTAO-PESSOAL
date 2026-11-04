@@ -13,8 +13,9 @@ COPY pyproject.toml uv.lock README.md ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 COPY src ./src
+# --no-editable: o pacote é copiado para o .venv (a imagem final não tem /app/src).
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev
+    uv sync --frozen --no-dev --no-editable
 
 FROM python:3.14-slim-bookworm AS runtime
 ENV PATH="/app/.venv/bin:$PATH" \
