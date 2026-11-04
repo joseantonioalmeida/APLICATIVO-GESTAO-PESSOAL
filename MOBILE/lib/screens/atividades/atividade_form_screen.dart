@@ -298,8 +298,12 @@ class _AtividadeFormScreenState extends State<AtividadeFormScreen> {
                     _inicio = v;
                     _erros['inicio'] = null;
                     _erros['fim'] = null;
-                    // Sugere uma hora depois quando o final ainda não existe.
-                    if (_fim == null && v + 60 < 24 * 60) _fim = v + 60;
+                    // O final precisa ser maior que o inicial: se deixou de
+                    // ser, limpa para o usuário escolher de novo.
+                    if (_fim != null && _fim! <= v) {
+                      _fim = null;
+                      _erros['fim'] = 'Escolha novamente o horário final';
+                    }
                   }),
                 ),
               ),
@@ -309,6 +313,9 @@ class _AtividadeFormScreenState extends State<AtividadeFormScreen> {
                   rotulo: 'Horário final',
                   obrigatorio: true,
                   valor: _fim,
+                  habilitado: _inicio != null,
+                  minimoExclusivo: _inicio,
+                  aoRecusar: (m) => setState(() => _erros['fim'] = m),
                   erro: _erros['fim'],
                   aoEscolher: (v) => setState(() {
                     _fim = v;

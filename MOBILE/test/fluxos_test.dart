@@ -199,6 +199,16 @@ void main() {
       await encerrar(t);
     });
 
+    testWidgets('horário final só depois do inicial', (t) async {
+      await abrirApp(t);
+      abrirFormAtividade(contexto(t));
+      await assentar(t);
+      await t.tap(find.text('--:--').last);
+      await assentar(t);
+      expect(find.text('Informe primeiro o horário inicial'), findsOneWidget);
+      await encerrar(t);
+    });
+
     testWidgets('concluir atividade na Início atualiza contagem', (t) async {
       await abrirApp(t);
       expect(find.text('4 de 6 atividades concluídas'), findsOneWidget);
