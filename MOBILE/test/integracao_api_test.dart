@@ -559,6 +559,123 @@ void main() {
     expect(futuro.compDespesas.mensagem, isNull);
   });
 
+  test('edições: importância paga e séries com alcance', () async {
+    final imp = await repo.criarImportancia(
+      ImportanciaForm(
+        nome: 'Internet',
+        categoria: 'Contas',
+        data: dia(6),
+        temDespesa: true,
+        valorPrevisto: 9990,
+        lembrete: const Lembrete(diasAntes: 3, horario: 9 * 60),
+      ),
+    );
+    await repo.criarMovimentacao(
+      MovimentacaoForm(
+        tipo: TipoMov.despesa,
+        nome: 'Internet',
+        valor: 9990,
+        categoria: 'Contas',
+        data: dia(-1),
+        importanciaId: imp.id,
+      ),
+    );
+    // Renomear uma importância paga é permitido; retirar a despesa não.
+    ImportanciaForm formDe(Importancia i, {String? nome, bool? despesa}) =>
+        ImportanciaForm(
+          nome: nome ?? i.nome,
+          categoria: i.categoria,
+          data: i.data,
+          temDespesa: despesa ?? i.temDespesa,
+          valorPrevisto: i.valorPrevisto,
+          lembrete: i.lembrete,
+        );
+    final paga = await repo.obterImportancia(imp.id);
+    await repo.editarImportancia(
+      imp.id,
+      formDe(paga, nome: 'Internet fibra'),
+      EscopoSerie.somenteEsta,
+    );
+    expect((await repo.obterImportancia(imp.id)).nome, 'Internet fibra');
+    await expectLater(
+      repo.editarImportancia(
+        imp.id,
+        formDe(paga, despesa: false),
+        EscopoSerie.somenteEsta,
+      ),
+      throwsA(isA<ErroApp>().having((e) => e.status, 'status', 409)),
+    );
+
+    // Série mensal: "esta e próximas" muda o nome das próximas pendentes.
+    final serie = await repo.criarImportancia(
+      ImportanciaForm(
+        nome: 'Aluguel',
+        categoria: 'Contas',
+        data: dia(40),
+        periodicidade: Periodicidade.mensal,
+      ),
+    );
+    final lista = (await repo.consultarImportancias(
+      FiltroImportancia.proximos,
+      ano: hoje.year,
+      mes: hoje.month,
+    )).where((i) => i.serieId == serie.serieId).toList();
+    expect(lista.length, greaterThanOrEqualTo(3));
+    final segunda = lista[1];
+    await repo.editarImportancia(
+      segunda.id,
+      ImportanciaForm(
+        nome: 'Aluguel reajustado',
+        categoria: 'Contas',
+        data: segunda.data,
+      ),
+      EscopoSerie.estaEProximas,
+    );
+    final depois = (await repo.consultarImportancias(
+      FiltroImportancia.proximos,
+      ano: hoje.year,
+      mes: hoje.month,
+    )).where((i) => i.serieId == serie.serieId).toList();
+    expect(depois.first.nome, 'Aluguel');
+    expect(depois.skip(1).map((i) => i.nome).toSet(), {'Aluguel reajustado'});
+
+    // Atividade diária: "esta e próximas" com mudança de horário.
+    final a = await repo.criarAtividade(
+      AtividadeForm(
+        nome: 'Leitura diária',
+        categoria: 'Estudo',
+        prioridade: Prioridade.baixa,
+        data: dia(50),
+        inicio: 20 * 60,
+        fim: 21 * 60,
+        periodicidade: Periodicidade.diaria,
+        dataFinal: dia(53),
+      ),
+    );
+    final segundoDia = (await repo.consultarAtividades(
+      FiltroAtividades(data: dia(51)),
+    )).itens.single;
+    await repo.editarAtividade(
+      segundoDia.id,
+      AtividadeForm(
+        nome: 'Leitura diária',
+        categoria: 'Estudo',
+        prioridade: Prioridade.alta,
+        data: segundoDia.data,
+        inicio: 21 * 60,
+        fim: 22 * 60,
+      ),
+      EscopoSerie.estaEProximas,
+    );
+    expect((await repo.obterAtividade(a.id)).inicio, 20 * 60);
+    for (final d in [51, 52, 53]) {
+      final x = (await repo.consultarAtividades(FiltroAtividades(data: dia(d))))
+          .itens
+          .single;
+      expect((x.inicio, x.prioridade), (21 * 60, Prioridade.alta));
+    }
+  });
+
   test('notificações: lista vazia e contador', () async {
     expect(await repo.listarNotificacoes(), isEmpty);
     expect(await repo.totalNaoLidas(), 0);
