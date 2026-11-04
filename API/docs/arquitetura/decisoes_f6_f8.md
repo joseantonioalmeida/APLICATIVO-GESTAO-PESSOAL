@@ -38,4 +38,4 @@
 
 ## 4. Resultado
 
-Suíte completa em PostgreSQL 16: 363 testes, Ruff e Pyright limpos. Smoke test com o servidor real (registro, login, importância com despesa, pagamento vinculado e resumo mensal) funcionando.
+Suíte completa em PostgreSQL 16: 363 testes (na época; hoje 412), Ruff e Pyright limpos. Smoke test com o servidor real (registro, login, importância com despesa, pagamento vinculado e resumo mensal) funcionando.

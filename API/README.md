@@ -4,7 +4,7 @@ FastAPI + SQLAlchemy (async) + PostgreSQL. Documentação em `docs/` e prompts e
 
 ## Executar
 ```bash
-cp .env.exemplo .env      # preencha os valores
+cp .env.exemplo .env      # preencha os valores (JWT_SEGREDO é obrigatório)
 docker compose up -d      # PostgreSQL
 uv sync
 uv run alembic upgrade head
@@ -20,7 +20,19 @@ uv run ruff check . && uv run ruff format --check . && uv run pyright
 ```
 
 ## Fases implementadas
-F1 fundação, F2 esquema, F3 identidade, F4 núcleo transacional, F5 atividades e recorrência,
-**F6 financeiro**, **F7 importâncias** e **F8 vínculo despesa-importância**.
-Pendentes: F9 (processador de lembretes e notificações), F10 (painel) e F11 (consolidação).
-Veja `docs/arquitetura/plano_fases_api.md`, `decisoes_f4_f5.md` e `decisoes_f6_f8.md`.
+F1 a F11: fundação, esquema, identidade, núcleo transacional, atividades e recorrência, financeiro,
+importâncias, vínculo despesa-importância, **lembretes e notificações (F9)**, **painel (F10)** e
+**consolidação (F11)**. Detalhes em `docs/arquitetura/plano_fases_api.md`, `decisoes_f4_f5.md`,
+`decisoes_f6_f8.md` e `decisoes_f9_f11.md`. Operação e checklist de produção: `docs/operacao/operacao.md`.
+
+## Processador de lembretes (notificações do sino)
+```bash
+uv run python -m api_gestao_pessoal.jobs.processar_lembretes            # contínuo
+uv run python -m api_gestao_pessoal.jobs.processar_lembretes --uma-vez  # um ciclo
+```
+Sem esse processo os lembretes são salvos e agendados, mas nenhuma notificação é gerada.
+
+## Desempenho (separado da suíte padrão)
+```bash
+uv run pytest tests/desempenho -m performance -q
+```
