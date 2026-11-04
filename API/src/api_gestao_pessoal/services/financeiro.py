@@ -20,6 +20,7 @@ from api_gestao_pessoal.schemas.financeiro import (
     MovimentacaoEdicao,
     ReceitaCriacao,
 )
+from api_gestao_pessoal.services import lembretes
 from api_gestao_pessoal.services.autorizacao import obter_do_usuario_ou_404
 from api_gestao_pessoal.services.consulta_movimentacoes import (
     consulta_base,
@@ -237,10 +238,16 @@ async def excluir(
     )
     if mov.excluida_em is not None:
         return
+    importancia_id = mov.importancia_id
     mov.excluida_em = contexto.agora
     mov.importancia_id = None
     mov.importancia_vinculada_em = None
     await sessao.flush()
+    if importancia_id is not None:
+        # A importância volta a ficar pendente na mesma operação (9.3.4).
+        await lembretes.ao_reabrir_importancia(
+            sessao, importancia_id, contexto.agora
+        )
 
 
 # ---------------------------------------------------------------- consulta

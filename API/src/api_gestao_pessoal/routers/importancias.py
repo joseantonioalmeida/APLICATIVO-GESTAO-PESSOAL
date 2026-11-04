@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from api_gestao_pessoal.database import SessaoDep
 from api_gestao_pessoal.dependencias import ChaveIdempotenciaDep, ContextoDep
 from api_gestao_pessoal.erros import CodigoErro, ErroNegocio
-from api_gestao_pessoal.schemas.comum import AlcanceSerie
+from api_gestao_pessoal.schemas.comum import AlcanceSerie, Pagina
 from api_gestao_pessoal.schemas.erro import CampoErro
 from api_gestao_pessoal.schemas.importancia import (
     ConsultaImportanciasResposta,
@@ -19,9 +19,11 @@ from api_gestao_pessoal.schemas.importancia import (
     ImportanciaCriacao,
     ImportanciaDetalhe,
     ImportanciaEdicao,
+    PagamentoDisponivel,
     SituacaoImportanciaEntrada,
+    VincularPagamentoEntrada,
 )
-from api_gestao_pessoal.services import importancias
+from api_gestao_pessoal.services import importancias, pagamentos
 from api_gestao_pessoal.services.idempotencia import (
     AcaoIdempotente,
     executar_idempotente,
@@ -85,6 +87,19 @@ async def consultar_importancias(  # noqa: PLR0913
     return resposta
 
 
+@router.get("/disponiveis-pagamento")
+async def importancias_disponiveis_para_pagamento(
+    sessao: SessaoDep,
+    contexto: ContextoDep,
+    busca: Annotated[str, Query(max_length=100)] = "",
+    limite: Annotated[int, Query(ge=1, le=LIMITE_MAXIMO)] = LIMITE_PADRAO,
+    cursor: Annotated[str | None, Query()] = None,
+) -> Pagina[PagamentoDisponivel]:
+    return await pagamentos.importancias_disponiveis(
+        sessao, contexto, busca=busca, limite=limite, cursor=cursor
+    )
+
+
 @router.get("/{importancia_id}")
 async def obter_importancia(
     importancia_id: uuid.UUID, sessao: SessaoDep, contexto: ContextoDep
@@ -141,6 +156,20 @@ async def definir_situacao(
 ) -> ImportanciaDetalhe:
     resposta = await importancias.definir_situacao(
         sessao, contexto, importancia_id, dados.situacao
+    )
+    await sessao.commit()
+    return resposta
+
+
+@router.put("/{importancia_id}/pagamento")
+async def vincular_pagamento(
+    importancia_id: uuid.UUID,
+    dados: VincularPagamentoEntrada,
+    sessao: SessaoDep,
+    contexto: ContextoDep,
+) -> ImportanciaDetalhe:
+    resposta = await pagamentos.vincular_despesa_existente(
+        sessao, contexto, importancia_id, dados.movimentacao_id
     )
     await sessao.commit()
     return resposta

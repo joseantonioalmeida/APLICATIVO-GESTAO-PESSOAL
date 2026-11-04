@@ -11,17 +11,23 @@ from fastapi.responses import JSONResponse
 from api_gestao_pessoal.database import SessaoDep
 from api_gestao_pessoal.dependencias import ChaveIdempotenciaDep, ContextoDep
 from api_gestao_pessoal.erros import CodigoErro, ErroNegocio
+from api_gestao_pessoal.schemas.comum import Pagina
 from api_gestao_pessoal.schemas.erro import CampoErro
 from api_gestao_pessoal.schemas.financeiro import (
     ConsultaMovimentacoesResposta,
     DespesaCriacao,
+    DespesaDisponivel,
     FiltroTipo,
     MovimentacaoDetalhe,
     MovimentacaoEdicao,
     ReceitaCriacao,
     ResumoFinanceiroResposta,
 )
-from api_gestao_pessoal.services import financeiro, resumo_financeiro
+from api_gestao_pessoal.services import (
+    financeiro,
+    pagamentos,
+    resumo_financeiro,
+)
 from api_gestao_pessoal.services.idempotencia import (
     AcaoIdempotente,
     RespostaIdempotente,
@@ -103,7 +109,11 @@ async def cadastrar_despesa(
         chave=chave,
         conteudo=dados,
         status_sucesso=201,
-        operacao=lambda: financeiro.criar_despesa(sessao, contexto, dados),
+        operacao=lambda: (
+            pagamentos.registrar_pagamento(sessao, contexto, dados)
+            if dados.importancia_id is not None
+            else financeiro.criar_despesa(sessao, contexto, dados)
+        ),
     )
     await sessao.commit()
     return _resposta_idempotente(resposta)
@@ -133,6 +143,19 @@ async def consultar_movimentacoes(  # noqa: PLR0913
     )
 
 
+@router.get("/despesas/disponiveis-vinculo")
+async def despesas_disponiveis_para_vinculo(
+    sessao: SessaoDep,
+    contexto: ContextoDep,
+    busca: Annotated[str, Query(max_length=100)] = "",
+    limite: Annotated[int, Query(ge=1, le=LIMITE_MAXIMO)] = LIMITE_PADRAO,
+    cursor: Annotated[str | None, Query()] = None,
+) -> Pagina[DespesaDisponivel]:
+    return await pagamentos.despesas_disponiveis(
+        sessao, contexto, busca=busca, limite=limite, cursor=cursor
+    )
+
+
 @router.get("/resumo")
 async def resumo(
     sessao: SessaoDep, contexto: ContextoDep, mes: MesQuery = None
@@ -156,9 +179,14 @@ async def editar_movimentacao(
     sessao: SessaoDep,
     contexto: ContextoDep,
 ) -> MovimentacaoDetalhe:
-    resposta = await financeiro.editar(
-        sessao, contexto, movimentacao_id, dados
-    )
+    if "importancia_id" in dados.model_fields_set:
+        resposta = await pagamentos.alterar_vinculo_despesa(
+            sessao, contexto, movimentacao_id, dados
+        )
+    else:
+        resposta = await financeiro.editar(
+            sessao, contexto, movimentacao_id, dados
+        )
     await sessao.commit()
     return resposta
 

@@ -20,6 +20,7 @@ uv run ruff check . && uv run ruff format --check . && uv run pyright
 ```
 
 ## Fases implementadas
-F1 fundação, F2 esquema, F3 identidade, **F4 núcleo transacional** (trava por usuário,
-idempotência, paginação keyset, catálogos de categorias) e **F5 atividades e recorrência**.
-Veja `docs/arquitetura/plano_fases_api.md` e `docs/arquitetura/decisoes_f4_f5.md`.
+F1 fundação, F2 esquema, F3 identidade, F4 núcleo transacional, F5 atividades e recorrência,
+**F6 financeiro**, **F7 importâncias** e **F8 vínculo despesa-importância**.
+Pendentes: F9 (processador de lembretes e notificações), F10 (painel) e F11 (consolidação).
+Veja `docs/arquitetura/plano_fases_api.md`, `decisoes_f4_f5.md` e `decisoes_f6_f8.md`.
