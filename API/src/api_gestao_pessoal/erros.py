@@ -43,6 +43,13 @@ class CodigoErro(StrEnum):
     TENTATIVAS_ESGOTADAS = "TENTATIVAS_ESGOTADAS"
     CODIGO_JA_VERIFICADO = "CODIGO_JA_VERIFICADO"
     TOKEN_REDEFINICAO_INVALIDO = "TOKEN_REDEFINICAO_INVALIDO"
+    IDEMPOTENCIA_CHAVE_AUSENTE = "IDEMPOTENCIA_CHAVE_AUSENTE"
+    IDEMPOTENCIA_CHAVE_INVALIDA = "IDEMPOTENCIA_CHAVE_INVALIDA"
+    CHAVE_IDEMPOTENCIA_REUTILIZADA = "CHAVE_IDEMPOTENCIA_REUTILIZADA"
+    CURSOR_INVALIDO = "CURSOR_INVALIDO"
+    SOBREPOSICAO_HORARIO = "SOBREPOSICAO_HORARIO"
+    ALCANCE_INVALIDO = "ALCANCE_INVALIDO"
+    REPETICAO_EXIGE_ALCANCE_SERIE = "REPETICAO_EXIGE_ALCANCE_SERIE"
 
 
 CATALOGO_ERROS: dict[CodigoErro, tuple[HTTPStatus, str]] = {
@@ -131,6 +138,34 @@ CATALOGO_ERROS: dict[CodigoErro, tuple[HTTPStatus, str]] = {
             "A solicitação de redefinição expirou ou é inválida. "
             "Solicite um novo código."
         ),
+    ),
+    CodigoErro.IDEMPOTENCIA_CHAVE_AUSENTE: (
+        HTTPStatus.BAD_REQUEST,
+        "Cabeçalho Idempotency-Key obrigatório.",
+    ),
+    CodigoErro.IDEMPOTENCIA_CHAVE_INVALIDA: (
+        HTTPStatus.BAD_REQUEST,
+        "Cabeçalho Idempotency-Key inválido.",
+    ),
+    CodigoErro.CHAVE_IDEMPOTENCIA_REUTILIZADA: (
+        HTTPStatus.UNPROCESSABLE_CONTENT,
+        "Esta chave de idempotência já foi usada com outro conteúdo.",
+    ),
+    CodigoErro.CURSOR_INVALIDO: (
+        HTTPStatus.UNPROCESSABLE_CONTENT,
+        "Cursor de paginação inválido.",
+    ),
+    CodigoErro.SOBREPOSICAO_HORARIO: (
+        HTTPStatus.CONFLICT,
+        "Este horário se sobrepõe a outra atividade.",
+    ),
+    CodigoErro.ALCANCE_INVALIDO: (
+        HTTPStatus.UNPROCESSABLE_CONTENT,
+        "Ocorrências concluídas só podem ser alteradas individualmente.",
+    ),
+    CodigoErro.REPETICAO_EXIGE_ALCANCE_SERIE: (
+        HTTPStatus.UNPROCESSABLE_CONTENT,
+        "Para alterar a repetição, escolha “Esta e as próximas pendentes”.",
     ),
 }
 
