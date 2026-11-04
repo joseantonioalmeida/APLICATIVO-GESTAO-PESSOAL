@@ -7,6 +7,7 @@ from alembic.config import Config
 RAIZ = Path(__file__).resolve().parents[2]
 ALEMBIC_INI = RAIZ / "alembic.ini"
 REVISAO_INICIAL = "0001"
+REVISAO_ATUAL = "0002"
 
 
 def config_alembic(url: str) -> Config:
