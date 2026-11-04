@@ -418,6 +418,41 @@ Future<T?> escolherOpcao<T>(
   );
 }
 
+/// Máscara monetária: o usuário digita só números e o campo mostra
+/// "1.621,00" (os dois últimos dígitos são os centavos). Aceita até
+/// 15 dígitos (trilhões de reais) sem estourar o limite de inteiros.
+class MascaraMoeda extends TextInputFormatter {
+  static const maxDigitos = 15;
+
+  static String formatar(String digitos) {
+    var d = digitos.replaceFirst(RegExp(r'^0+'), '');
+    if (d.isEmpty) return '';
+    d = d.padLeft(3, '0');
+    final inteiro = d.substring(0, d.length - 2);
+    final centavos = d.substring(d.length - 2);
+    final b = StringBuffer();
+    for (var i = 0; i < inteiro.length; i++) {
+      if (i > 0 && (inteiro.length - i) % 3 == 0) b.write('.');
+      b.write(inteiro[i]);
+    }
+    return '$b,$centavos';
+  }
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue antigo,
+    TextEditingValue novo,
+  ) {
+    var d = novo.text.replaceAll(RegExp(r'\D'), '');
+    if (d.length > maxDigitos) d = d.substring(0, maxDigitos);
+    final t = formatar(d);
+    return TextEditingValue(
+      text: t,
+      selection: TextSelection.collapsed(offset: t.length),
+    );
+  }
+}
+
 /// Máscara DD/MM/AAAA.
 class MascaraData extends TextInputFormatter {
   @override
@@ -522,10 +557,20 @@ class CampoHora extends StatelessWidget {
     this.dica = '--:--',
     this.obrigatorio = false,
     this.aoLimpar,
+    this.habilitado = true,
+    this.minimoExclusivo,
+    this.aoRecusar,
   });
   final String? rotulo;
   final int? valor;
   final ValueChanged<int> aoEscolher;
+
+  /// Desabilitado: tocar chama [aoRecusar] com o motivo.
+  final bool habilitado;
+
+  /// Só aceita horários estritamente maiores que este (minutos desde 00:00).
+  final int? minimoExclusivo;
+  final ValueChanged<String>? aoRecusar;
   final String? erro;
   final String dica;
   final bool obrigatorio;
@@ -541,7 +586,13 @@ class CampoHora extends StatelessWidget {
           erro: erro != null,
           onTap: () async {
             FocusScope.of(context).unfocus();
-            final inicial = valor ?? 8 * 60;
+            if (!habilitado) {
+              aoRecusar?.call('Informe primeiro o horário inicial');
+              return;
+            }
+            final minimo = minimoExclusivo;
+            var inicial = valor ?? (minimo != null ? minimo + 60 : 8 * 60);
+            if (inicial > 23 * 60 + 59) inicial = 23 * 60 + 59;
             final r = await showTimePicker(
               context: context,
               initialTime: TimeOfDay(hour: inicial ~/ 60, minute: inicial % 60),
@@ -550,7 +601,15 @@ class CampoHora extends StatelessWidget {
                 child: child!,
               ),
             );
-            if (r != null) aoEscolher(r.hour * 60 + r.minute);
+            if (r == null) return;
+            final v = r.hour * 60 + r.minute;
+            if (minimo != null && v <= minimo) {
+              aoRecusar?.call(
+                'O horário final deve ser posterior ao horário inicial (${Fmt.hora(minimo)})',
+              );
+              return;
+            }
+            aoEscolher(v);
           },
           child: Row(
             children: [
@@ -560,7 +619,9 @@ class CampoHora extends StatelessWidget {
                   style: Txt.corpo.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: valor == null ? Cores.dica : Cores.texto,
+                    color: valor == null || !habilitado
+                        ? Cores.dica
+                        : Cores.texto,
                   ),
                 ),
               ),
@@ -626,9 +687,7 @@ class CampoValor extends StatelessWidget {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                  ],
+                  inputFormatters: [MascaraMoeda()],
                   cursorColor: Cores.primaria,
                   style: Txt.corpo.copyWith(
                     fontSize: tam,

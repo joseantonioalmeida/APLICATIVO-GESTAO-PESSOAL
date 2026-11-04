@@ -3,12 +3,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:minhavida/core/formatadores.dart';
 import 'package:minhavida/data/repositorio_memoria.dart';
 import 'package:minhavida/models/modelos.dart';
+import 'package:minhavida/widgets/comuns.dart';
 import 'package:minhavida/shell/rotas.dart';
 
 import 'apoio/app_teste.dart';
 
 void main() {
   setUpAll(iniciarLocale);
+
+  group('Máscara de moeda', () {
+    test('digita só números e formata', () {
+      expect(MascaraMoeda.formatar('1'), '0,01');
+      expect(MascaraMoeda.formatar('162100'), '1.621,00');
+      expect(MascaraMoeda.formatar('212121212121212'), '2.121.212.121.212,12');
+      expect(Conv.centavos(MascaraMoeda.formatar('162100')), 162100);
+      expect(Conv.centavos('2.121.212.121.212,12'), 212121212121212);
+    });
+  });
 
   group('Formatação', () {
     test('centavos e moeda', () {
@@ -40,15 +51,17 @@ void main() {
 
     test('atividades de hoje: 6 total, 4 concluídas, 10h30', () async {
       final c = await repo.consultarAtividades(
-          FiltroAtividades(data: DateTime(2025, 9, 29)),
-          limite: 100);
+        FiltroAtividades(data: DateTime(2025, 9, 29)),
+        limite: 100,
+      );
       expect((c.total, c.concluidas, c.pendentes, c.minutos), (6, 4, 2, 630));
       expect((await repo.pendenciasAnteriores()).quantidade, 2);
     });
 
     test('concluir é idempotente', () async {
       final c = await repo.consultarAtividades(
-          FiltroAtividades(data: DateTime(2025, 9, 29)));
+        FiltroAtividades(data: DateTime(2025, 9, 29)),
+      );
       final id = c.itens.firstWhere((a) => !a.concluida).id;
       await repo.alterarConclusaoAtividade(id, true);
       await repo.alterarConclusaoAtividade(id, true);
@@ -56,53 +69,62 @@ void main() {
     });
 
     test('série semanal 08, 15 e 22/10', () async {
-      await repo.criarAtividade(AtividadeForm(
-        nome: 'Reunião',
-        categoria: 'Trabalho',
-        prioridade: Prioridade.baixa,
-        data: DateTime(2026, 10, 8),
-        inicio: 480,
-        fim: 540,
-        periodicidade: Periodicidade.semanal,
-        dataFinal: DateTime(2026, 10, 22),
-      ));
+      await repo.criarAtividade(
+        AtividadeForm(
+          nome: 'Reunião',
+          categoria: 'Trabalho',
+          prioridade: Prioridade.baixa,
+          data: DateTime(2026, 10, 8),
+          inicio: 480,
+          fim: 540,
+          periodicidade: Periodicidade.semanal,
+          dataFinal: DateTime(2026, 10, 22),
+        ),
+      );
       var n = 0;
       for (final d in [8, 15, 22]) {
         n += (await repo.consultarAtividades(
-                FiltroAtividades(data: DateTime(2026, 10, d))))
-            .total;
+          FiltroAtividades(data: DateTime(2026, 10, d)),
+        )).total;
       }
       expect(n, 3);
     });
 
     test('pagamento vinculado conta uma vez e exclusão reabre', () async {
-      final imp = (await repo.consultarImportancias(FiltroImportancia.hoje,
-              ano: 2025, mes: 9))
-          .first;
+      final imp = (await repo.consultarImportancias(
+        FiltroImportancia.hoje,
+        ano: 2025,
+        mes: 9,
+      )).first;
       final antes = (await repo.resumoMes(2025, 9)).despesas;
-      final m = await repo.criarMovimentacao(MovimentacaoForm(
-        tipo: TipoMov.despesa,
-        nome: imp.nome,
-        valor: 10500,
-        categoria: 'Contas',
-        data: DateTime(2025, 9, 29),
-        importanciaId: imp.id,
-      ));
+      final m = await repo.criarMovimentacao(
+        MovimentacaoForm(
+          tipo: TipoMov.despesa,
+          nome: imp.nome,
+          valor: 10500,
+          categoria: 'Contas',
+          data: DateTime(2025, 9, 29),
+          importanciaId: imp.id,
+        ),
+      );
       expect((await repo.resumoMes(2025, 9)).despesas, antes + 10500);
       final paga = await repo.obterImportancia(imp.id);
       expect(paga.concluida && paga.paga, true);
       expect(paga.valorPago, 10500);
       expect(paga.valorPrevisto, 9990);
       expect(
-          () => repo.criarMovimentacao(MovimentacaoForm(
-                tipo: TipoMov.despesa,
-                nome: 'Outra',
-                valor: 100,
-                categoria: 'Contas',
-                data: DateTime(2025, 9, 29),
-                importanciaId: imp.id,
-              )),
-          throwsA(isA<ErroApp>()));
+        () => repo.criarMovimentacao(
+          MovimentacaoForm(
+            tipo: TipoMov.despesa,
+            nome: 'Outra',
+            valor: 100,
+            categoria: 'Contas',
+            data: DateTime(2025, 9, 29),
+            importanciaId: imp.id,
+          ),
+        ),
+        throwsA(isA<ErroApp>()),
+      );
       await repo.excluirMovimentacao(m.id);
       expect((await repo.obterImportancia(imp.id)).concluida, false);
       expect((await repo.resumoMes(2025, 9)).despesas, antes);
@@ -110,28 +132,38 @@ void main() {
 
     test('data futura rejeitada', () async {
       expect(
-          () => repo.criarMovimentacao(MovimentacaoForm(
-                tipo: TipoMov.receita,
-                nome: 'X',
-                valor: 100,
-                categoria: 'Outros',
-                data: DateTime(2025, 10, 1),
-              )),
-          throwsA(isA<ErroApp>()));
+        () => repo.criarMovimentacao(
+          MovimentacaoForm(
+            tipo: TipoMov.receita,
+            nome: 'X',
+            valor: 100,
+            categoria: 'Outros',
+            data: DateTime(2025, 10, 1),
+          ),
+        ),
+        throwsA(isA<ErroApp>()),
+      );
     });
 
     test('recuperação de senha', () async {
-      expect(() => repo.solicitarCodigo('naoexiste@x.com'),
-          throwsA(isA<ErroApp>()));
+      expect(
+        () => repo.solicitarCodigo('naoexiste@x.com'),
+        throwsA(isA<ErroApp>()),
+      );
       final c1 = await repo.solicitarCodigo('julio@email.com');
       final c2 = await repo.solicitarCodigo('julio@email.com');
       if (c1 != c2) {
-        expect(() => repo.verificarCodigo('julio@email.com', c1!),
-            throwsA(isA<ErroApp>()));
+        expect(
+          () => repo.verificarCodigo('julio@email.com', c1!),
+          throwsA(isA<ErroApp>()),
+        );
       }
       final tok = await repo.verificarCodigo('julio@email.com', c2!);
       await repo.redefinirSenha(
-          email: 'julio@email.com', token: tok, novaSenha: 'NovaSenha1');
+        email: 'julio@email.com',
+        token: tok,
+        novaSenha: 'NovaSenha1',
+      );
       repo.sair();
       await repo.entrar('julio@email.com', 'NovaSenha1');
     });
@@ -164,6 +196,16 @@ void main() {
       expect(find.text('Informe o nome da atividade'), findsOneWidget);
       expect(find.text('Selecione uma categoria'), findsWidgets);
       expect(find.text('Informe o horário inicial'), findsOneWidget);
+      await encerrar(t);
+    });
+
+    testWidgets('horário final só depois do inicial', (t) async {
+      await abrirApp(t);
+      abrirFormAtividade(contexto(t));
+      await assentar(t);
+      await t.tap(find.text('--:--').last);
+      await assentar(t);
+      expect(find.text('Informe primeiro o horário inicial'), findsOneWidget);
       await encerrar(t);
     });
 
