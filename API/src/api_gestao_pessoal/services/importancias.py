@@ -506,6 +506,33 @@ async def _materializar_filtro(
             )
 
 
+async def materializar_janela_da_serie(
+    sessao: AsyncSession,
+    contexto: ContextoUsuario,
+    serie_id: uuid.UUID,
+    inicio: date,
+    fim: date,
+) -> int:
+    """Materializa `[inicio, fim]` de uma série (usado pelo processador).
+
+    Cria também os lembretes das ocorrências novas (§8.6.3). Devolve a
+    quantidade de ocorrências criadas; a série precisa ser do usuário.
+    """
+    serie = await sessao.get(SerieImportancia, serie_id)
+    if serie is None or serie.usuario_id != contexto.usuario_id:
+        return 0
+    inicio = max(inicio, serie.data_referencia)
+    if fim < inicio:
+        return 0
+    novas = await _materializar(
+        sessao,
+        contexto,
+        serie,
+        posicoes_no_intervalo(_regra(serie), inicio, fim),
+    )
+    return len(novas)
+
+
 # --------------------------------------------------------------------------
 # Cadastro
 # --------------------------------------------------------------------------
@@ -1268,3 +1295,110 @@ async def excluir(
     ).all()
     for linha in linhas:
         await _excluir_linha(sessao, contexto, linha)
+
+
+# --------------------------------------------------------------------------
+# Painel inicial (§8.10): mesmas regras e funções da tela de Importâncias
+# --------------------------------------------------------------------------
+
+LIMITE_PROXIMAS_PAINEL = 3
+ANOS_EXTRA_PROXIMAS = 5
+
+
+@dataclass(frozen=True, slots=True)
+class ResumoPainel:
+    """Blocos de importâncias da tela inicial."""
+
+    pendentes_mes: int
+    proximas: list[ImportanciaItem]
+    atrasadas_quantidade: int
+
+
+async def _materializar_intervalo_do_usuario(
+    sessao: AsyncSession, contexto: ContextoUsuario, inicio: date, fim: date
+) -> None:
+    series = (
+        await sessao.scalars(
+            select(SerieImportancia).where(
+                SerieImportancia.usuario_id == contexto.usuario_id
+            )
+        )
+    ).all()
+    for serie in series:
+        de = max(inicio, serie.data_referencia)
+        if fim >= de:
+            await _materializar(
+                sessao,
+                contexto,
+                serie,
+                posicoes_no_intervalo(_regra(serie), de, fim),
+            )
+
+
+async def _proximas_do_painel(
+    sessao: AsyncSession, usuario_id: uuid.UUID, hoje: date
+) -> list[ImportanciaItem]:
+    consulta = consulta_itens().where(
+        Importancia.usuario_id == usuario_id,
+        Importancia.excluida_em.is_(None),
+        ~expr_concluida(),
+        Importancia.data_compromisso >= hoje,
+    )
+    linhas = (
+        await sessao.execute(
+            _ordenar(GrupoImportancia.PROXIMAS, consulta).limit(
+                LIMITE_PROXIMAS_PAINEL
+            )
+        )
+    ).all()
+    return [montar_item(linha, hoje) for linha in linhas]
+
+
+async def resumo_painel(
+    sessao: AsyncSession, contexto: ContextoUsuario
+) -> ResumoPainel:
+    """Pendentes do mês, três próximas e atrasadas (4.1.2, 4.1.8, 4.2.4)."""
+    await travar_usuario(sessao, contexto.usuario_id, ModoTrava.EXCLUSIVA)
+    hoje = contexto.hoje
+    await _materializar_filtro(
+        sessao,
+        contexto,
+        FiltrosConsulta(FiltroImportancia.TODOS, None, "", 1, None),
+    )
+    proximas = await _proximas_do_painel(sessao, contexto.usuario_id, hoje)
+    if len(proximas) < LIMITE_PROXIMAS_PAINEL:
+        # Sem horizonte (4.1.8): procura mais adiante, só para séries.
+        await _materializar_intervalo_do_usuario(
+            sessao,
+            contexto,
+            horizonte_de(hoje) + timedelta(days=1),
+            hoje.replace(year=hoje.year + ANOS_EXTRA_PROXIMAS, day=28),
+        )
+        proximas = await _proximas_do_painel(sessao, contexto.usuario_id, hoje)
+    comuns = [
+        Importancia.usuario_id == contexto.usuario_id,
+        Importancia.excluida_em.is_(None),
+    ]
+    pendentes_mes = await sessao.scalar(
+        select(func.count())
+        .select_from(Importancia)
+        .outerjoin(M, M.importancia_id == Importancia.id)
+        .where(
+            *comuns,
+            ~expr_concluida(),
+            Importancia.data_compromisso.between(
+                primeiro_dia_mes(hoje), ultimo_dia_do_mes(hoje)
+            ),
+        )
+    )
+    atrasadas = await sessao.scalar(
+        select(func.count())
+        .select_from(Importancia)
+        .outerjoin(M, M.importancia_id == Importancia.id)
+        .where(*comuns, _cond_grupo(GrupoImportancia.ATRASADAS, hoje, None))
+    )
+    return ResumoPainel(
+        pendentes_mes=int(pendentes_mes or 0),
+        proximas=proximas,
+        atrasadas_quantidade=int(atrasadas or 0),
+    )

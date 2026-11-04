@@ -663,6 +663,55 @@ async def pendencias_anteriores(
     )
 
 
+LIMITE_PREVIA_PAINEL = 3
+
+
+async def resumo_do_dia(
+    sessao: AsyncSession, contexto: ContextoUsuario
+) -> tuple[int, int, list[AtividadeItem]]:
+    """`(total, concluidas, previa)` de hoje, sem filtros (4.1.4).
+
+    Os totais cobrem todas as atividades do dia; a prévia traz até três,
+    pendentes antes das concluídas, por horário inicial e `id`.
+    """
+    await travar_usuario(sessao, contexto.usuario_id, ModoTrava.EXCLUSIVA)
+    await materializar_dia(sessao, contexto.usuario_id, contexto.hoje)
+    do_dia = (
+        Atividade.usuario_id == contexto.usuario_id,
+        Atividade.excluida_em.is_(None),
+        Atividade.data_atividade == contexto.hoje,
+    )
+    total, concluidas = (
+        await sessao.execute(
+            select(
+                func.count(),
+                func.count().filter(Atividade.concluida_em.is_not(None)),
+            ).where(*do_dia)
+        )
+    ).one()
+    linhas = (
+        await sessao.execute(
+            select(Atividade, CategoriaAtividade.nome)
+            .join(
+                CategoriaAtividade,
+                CategoriaAtividade.id == Atividade.categoria_id,
+            )
+            .where(*do_dia)
+            .order_by(
+                Atividade.concluida_em.is_not(None),
+                Atividade.horario_inicial,
+                Atividade.id,
+            )
+            .limit(LIMITE_PREVIA_PAINEL)
+        )
+    ).all()
+    return (
+        int(total),
+        int(concluidas),
+        [_item(atividade, nome) for atividade, nome in linhas],
+    )
+
+
 async def obter(
     sessao: AsyncSession, contexto: ContextoUsuario, atividade_id: uuid.UUID
 ) -> AtividadeDetalhe:
