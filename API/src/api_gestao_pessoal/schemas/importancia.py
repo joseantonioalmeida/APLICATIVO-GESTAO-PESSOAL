@@ -128,6 +128,7 @@ class RepeticaoImportanciaEntrada(BaseModel):
     periodicidade: PeriodicidadeImportanciaApi = (
         PeriodicidadeImportanciaApi.NAO_REPETIR
     )
+    momento_conclusao: datetime | None = None
     termino: TerminoRepeticao = TerminoRepeticao.SEM_DATA_FINAL
     data_final: DataCivil | None = None
 
@@ -214,10 +215,12 @@ class ImportanciaItem(BaseModel):
     dias_ate_vencimento: int | None
     prazo: Prazo | None
     recorrente: bool
+    serie_id: uuid.UUID | None = None
     grupo: GrupoImportancia
     periodicidade: PeriodicidadeImportanciaApi = (
         PeriodicidadeImportanciaApi.NAO_REPETIR
     )
+    momento_conclusao: datetime | None = None
 
 
 class LembreteResposta(BaseModel):
@@ -252,7 +255,6 @@ class ImportanciaDetalhe(ImportanciaItem):
     lembrete: LembreteResposta | None
     serie: SerieImportanciaResposta | None
     numero_ocorrencia: int | None
-    momento_conclusao: datetime | None
     categoria_financeira_sugerida: CategoriaFinanceiraSugerida | None
     criado_em: datetime
     atualizado_em: datetime

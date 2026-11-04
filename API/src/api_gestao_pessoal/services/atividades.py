@@ -340,6 +340,7 @@ def _item(atividade: Atividade, categoria_nome: str) -> AtividadeItem:
         ),
         concluida_em=atividade.concluida_em,
         recorrente=atividade.serie_id is not None,
+        serie_id=atividade.serie_id,
     )
 
 

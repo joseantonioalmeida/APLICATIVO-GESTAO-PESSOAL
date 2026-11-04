@@ -248,6 +248,7 @@ class ConsultaMovimentacoesResposta(Pagina[MovimentacaoItem]):
     mes: str
     filtros_ativos: bool
     possui_movimentacoes_mes: bool
+    total: int
 
 
 class Intervalo(BaseModel):

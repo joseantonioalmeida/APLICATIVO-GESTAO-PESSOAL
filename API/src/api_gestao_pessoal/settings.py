@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     ARGON2_MEMORY_COST_KIB: int = Field(default=65536, ge=8, le=1048576)
     ARGON2_PARALLELISM: int = Field(default=4, ge=1, le=16)
     ARGON2_MAX_CONCORRENTES: int = Field(default=4, ge=1, le=32)
-    EMAIL_MODO: Literal["smtp", "memoria"] = "smtp"
+    EMAIL_MODO: Literal["smtp", "memoria", "console"] = "smtp"
     SMTP_HOST: str | None = Field(default=None, min_length=1, max_length=253)
     SMTP_PORTA: int = Field(default=587, ge=1, le=65535)
     SMTP_SEGURANCA: Literal["starttls", "tls", "nenhuma"] = "starttls"
@@ -125,8 +125,10 @@ class Settings(BaseSettings):
         if self.AMBIENTE != "producao":
             return []
         problemas: list[str] = []
-        if self.EMAIL_MODO == "memoria":
-            problemas.append("EMAIL_MODO=memoria é proibido em producao")
+        if self.EMAIL_MODO != "smtp":
+            problemas.append(
+                f"EMAIL_MODO={self.EMAIL_MODO} é proibido em producao"
+            )
         if self.SMTP_SEGURANCA == "nenhuma":
             problemas.append("SMTP_SEGURANCA=nenhuma é proibido em producao")
         if self.ARGON2_TIME_COST < PISO_PRODUCAO_TIME_COST:

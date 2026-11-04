@@ -62,6 +62,19 @@ class EnviadorEmailMemoria(EnviadorEmail):
         self.enviadas.append(mensagem)
 
 
+class EnviadorEmailConsole(EnviadorEmail):
+    """Escreve a mensagem no log (só desenvolvimento: expõe o código)."""
+
+    @override
+    async def enviar(self, mensagem: MensagemEmail) -> None:
+        logger.warning(
+            "E-mail (modo console) para %s | %s\n%s",
+            mensagem.destinatario,
+            mensagem.assunto,
+            mensagem.corpo,
+        )
+
+
 class EnviadorEmailSmtp(EnviadorEmail):
     """Envio por `smtplib`, em thread, com TLS verificado."""
 
@@ -133,9 +146,11 @@ class EnviadorEmailSmtp(EnviadorEmail):
 
 
 def criar_enviador(settings: Settings) -> EnviadorEmail:
-    """Memória com `EMAIL_MODO == "memoria"`; senão, SMTP."""
+    """Memória, console (desenvolvimento) ou SMTP, conforme `EMAIL_MODO`."""
     if settings.EMAIL_MODO == "memoria":
         return EnviadorEmailMemoria()
+    if settings.EMAIL_MODO == "console":
+        return EnviadorEmailConsole()
     return EnviadorEmailSmtp(settings)
 
 

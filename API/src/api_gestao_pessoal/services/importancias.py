@@ -266,7 +266,7 @@ def _situacao(linha: Any) -> tuple[bool, bool, datetime | None]:  # noqa: ANN401
 def montar_item(linha: Any, hoje: date) -> ImportanciaItem:  # noqa: ANN401
     """Converte uma linha de `consulta_itens` em item de lista."""
     imp, categoria_nome, mov_id, mov_valor, mov_data, _ = linha
-    concluida, paga, _momento = _situacao(linha)
+    concluida, paga, momento = _situacao(linha)
     dias = None if concluida else (imp.data_compromisso - hoje).days
     prazo: Prazo | None = None
     if dias is not None:
@@ -314,7 +314,9 @@ def montar_item(linha: Any, hoje: date) -> ImportanciaItem:  # noqa: ANN401
         dias_ate_vencimento=dias,
         prazo=prazo,
         recorrente=imp.serie_id is not None,
+        serie_id=imp.serie_id,
         grupo=grupo,
+        momento_conclusao=momento,
     )
 
 
@@ -397,7 +399,6 @@ async def detalhe(
         ),
         serie=serie,
         numero_ocorrencia=imp.numero_ocorrencia,
-        momento_conclusao=_situacao(linha)[2],
         categoria_financeira_sugerida=(
             CategoriaFinanceiraSugerida(id=sugerida.id, nome=sugerida.nome)
             if sugerida is not None
