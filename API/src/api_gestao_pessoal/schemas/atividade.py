@@ -259,6 +259,8 @@ class AtividadeItem(BaseModel):
     situacao: SituacaoAtividade
     concluida_em: datetime | None
     recorrente: bool
+    serie_id: uuid.UUID | None = None
+    periodicidade: PeriodicidadeRepeticao = PeriodicidadeRepeticao.NAO_REPETIR
 
 
 class SerieResposta(BaseModel):

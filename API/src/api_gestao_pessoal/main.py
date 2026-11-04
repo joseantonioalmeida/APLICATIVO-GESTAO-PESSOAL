@@ -1,8 +1,11 @@
+import json
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import anyio
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from api_gestao_pessoal.database import criar_engine, criar_fabrica_sessoes
 from api_gestao_pessoal.email import criar_enviador
@@ -17,11 +20,29 @@ from api_gestao_pessoal.routers import (
     categorias,
     financeiro,
     importancias,
+    notificacoes,
+    painel,
     saude,
     usuarios,
 )
 from api_gestao_pessoal.seguranca import HasherSenha, ParametrosArgon2
 from api_gestao_pessoal.settings import Settings, obter_settings
+
+
+def _origens_cors(settings: Settings | None) -> list[str]:
+    """Origens CORS: das Settings, ou de `CORS_ORIGENS` (JSON) no ambiente.
+
+    O `app` do módulo é criado na importação, antes de haver Settings
+    completas; por isso a variável é lida direto do ambiente nesse caso.
+    """
+    if settings is not None:
+        return settings.CORS_ORIGENS
+    bruto = os.environ.get("CORS_ORIGENS", "")
+    try:
+        valor = json.loads(bruto) if bruto else []
+    except ValueError:
+        return []
+    return [str(o) for o in valor] if isinstance(valor, list) else []
 
 
 def criar_app(settings: Settings | None = None) -> FastAPI:
@@ -54,14 +75,26 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
         title="API MinhaVida", version="0.1.0", lifespan=ciclo_de_vida
     )
     app.middleware("http")(middleware_id_requisicao)
+    origens = _origens_cors(settings)
+    if origens:
+        # Só para clientes web (o aplicativo móvel não usa CORS).
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=origens,
+            allow_methods=["*"],
+            allow_headers=["*"],
+            expose_headers=["Idempotency-Replayed", "X-Request-ID"],
+        )
     registrar_tratadores_erro(app)
     app.include_router(saude.router)
     app.include_router(autenticacao.router, prefix="/api/v1")
     app.include_router(usuarios.router, prefix="/api/v1")
+    app.include_router(notificacoes.router, prefix="/api/v1")
     app.include_router(categorias.router, prefix="/api/v1")
     app.include_router(atividades.router, prefix="/api/v1")
     app.include_router(financeiro.router, prefix="/api/v1")
     app.include_router(importancias.router, prefix="/api/v1")
+    app.include_router(painel.router, prefix="/api/v1")
     return app
 
 

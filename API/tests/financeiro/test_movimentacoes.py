@@ -246,3 +246,21 @@ async def test_despesa_maior_que_a_receita_e_aceita_11_6_2(
     await receita(cliente, usuario, valor="100")
     await despesa(cliente, usuario, valor="130")
     assert (await resumo(cliente, usuario))["saldo"] == "-30.00"
+
+
+async def test_total_da_consulta_independe_da_paginacao(
+    cliente: httpx.AsyncClient, usuario: UsuarioTeste
+) -> None:
+    for i in range(3):
+        await despesa(cliente, usuario, nome=f"Compra numero {i}")
+    await receita(cliente, usuario, nome="Salario do mes")
+    r = await cliente.get(
+        f"{BASE}/movimentacoes",
+        params={"limite": 2, "tipo": "DESPESA"},
+        headers=usuario.cabecalhos,
+    )
+    corpo = r.json()
+    assert len(corpo["itens"]) == 2
+    assert corpo["total"] == 3
+    r = await cliente.get(f"{BASE}/movimentacoes", headers=usuario.cabecalhos)
+    assert r.json()["total"] == 4

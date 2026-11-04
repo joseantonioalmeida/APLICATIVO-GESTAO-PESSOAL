@@ -313,6 +313,9 @@ async def consultar(  # noqa: PLR0913
         condicoes.append(
             Mov.nome.ilike(f"%{escapar_busca(termo)}%", escape="\\")
         )
+    total = int(
+        await sessao.scalar(select(func.count()).where(*condicoes)) or 0
+    )
     consulta = consulta_base().where(*condicoes)
     if chaves is not None:
         try:
@@ -349,4 +352,5 @@ async def consultar(  # noqa: PLR0913
             tipo != FiltroTipo.TODAS or categoria_id is not None or bool(termo)
         ),
         possui_movimentacoes_mes=possui,
+        total=total,
     )

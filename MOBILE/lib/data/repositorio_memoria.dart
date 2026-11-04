@@ -10,13 +10,20 @@ import 'repositorio.dart';
 /// comparações, lembretes etc.) para que o aplicativo funcione por completo
 /// antes da API existir. Os dados são perdidos ao fechar o aplicativo.
 class RepositorioMemoria implements Repositorio {
-  RepositorioMemoria({DateTime Function()? relogio, bool demonstracao = true})
-    : _relogio = relogio ?? DateTime.now {
+  RepositorioMemoria({
+    DateTime Function()? relogio,
+    bool demonstracao = true,
+    Random? aleatorio,
+  }) : _relogio = relogio ?? DateTime.now,
+       _rng = aleatorio ?? Random() {
     if (demonstracao) _semear();
   }
 
   final DateTime Function() _relogio;
-  final _rng = Random();
+  final Random _rng;
+
+  @override
+  void Function()? aoSessaoExpirada;
   int _seq = 0;
 
   final Map<String, _Conta> _contas = {};

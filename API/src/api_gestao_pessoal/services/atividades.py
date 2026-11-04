@@ -340,7 +340,28 @@ def _item(atividade: Atividade, categoria_nome: str) -> AtividadeItem:
         ),
         concluida_em=atividade.concluida_em,
         recorrente=atividade.serie_id is not None,
+        serie_id=atividade.serie_id,
     )
+
+
+async def _com_periodicidade(
+    sessao: AsyncSession, itens: list[AtividadeItem]
+) -> list[AtividadeItem]:
+    """Preenche a repetição dos itens recorrentes (uma consulta só)."""
+    ids = [i.id for i in itens if i.recorrente]
+    if not ids:
+        return itens
+    linhas = (
+        await sessao.execute(
+            select(Atividade.id, SerieAtividade.periodicidade)
+            .join(SerieAtividade, SerieAtividade.id == Atividade.serie_id)
+            .where(Atividade.id.in_(ids))
+        )
+    ).all()
+    por_id = {i: _periodicidade_api(p) for i, p in linhas}
+    for item in itens:
+        item.periodicidade = por_id.get(item.id, item.periodicidade)
+    return itens
 
 
 async def _detalhe(
@@ -367,6 +388,8 @@ async def _detalhe(
                 numero_final=s.numero_final,
             )
     base = _item(atividade, categoria_nome or "")
+    if serie is not None:
+        base.periodicidade = serie.periodicidade
     return AtividadeDetalhe(
         **base.model_dump(),
         descricao=atividade.descricao,
@@ -571,7 +594,9 @@ async def consultar(
             _chaves_da_linha(f.ordenacao, ultima[0], ultima[2], ultima[3]),
         )
     return ConsultaAtividadesResposta(
-        itens=[_item(linha[0], linha[1]) for linha in pagina],
+        itens=await _com_periodicidade(
+            sessao, [_item(linha[0], linha[1]) for linha in pagina]
+        ),
         proximo_cursor=proximo,
         data=f.data,
         eh_hoje=f.data == contexto.hoje,
@@ -660,6 +685,57 @@ async def pendencias_anteriores(
     ).one()
     return PendenciasAnterioresResposta(
         quantidade=int(linha[0]), data_mais_antiga=linha[1]
+    )
+
+
+LIMITE_PREVIA_PAINEL = 3
+
+
+async def resumo_do_dia(
+    sessao: AsyncSession, contexto: ContextoUsuario
+) -> tuple[int, int, list[AtividadeItem]]:
+    """`(total, concluidas, previa)` de hoje, sem filtros (4.1.4).
+
+    Os totais cobrem todas as atividades do dia; a prévia traz até três,
+    pendentes antes das concluídas, por horário inicial e `id`.
+    """
+    await travar_usuario(sessao, contexto.usuario_id, ModoTrava.EXCLUSIVA)
+    await materializar_dia(sessao, contexto.usuario_id, contexto.hoje)
+    do_dia = (
+        Atividade.usuario_id == contexto.usuario_id,
+        Atividade.excluida_em.is_(None),
+        Atividade.data_atividade == contexto.hoje,
+    )
+    total, concluidas = (
+        await sessao.execute(
+            select(
+                func.count(),
+                func.count().filter(Atividade.concluida_em.is_not(None)),
+            ).where(*do_dia)
+        )
+    ).one()
+    linhas = (
+        await sessao.execute(
+            select(Atividade, CategoriaAtividade.nome)
+            .join(
+                CategoriaAtividade,
+                CategoriaAtividade.id == Atividade.categoria_id,
+            )
+            .where(*do_dia)
+            .order_by(
+                Atividade.concluida_em.is_not(None),
+                Atividade.horario_inicial,
+                Atividade.id,
+            )
+            .limit(LIMITE_PREVIA_PAINEL)
+        )
+    ).all()
+    return (
+        int(total),
+        int(concluidas),
+        await _com_periodicidade(
+            sessao, [_item(atividade, nome) for atividade, nome in linhas]
+        ),
     )
 
 

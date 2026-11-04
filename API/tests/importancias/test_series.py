@@ -376,3 +376,24 @@ async def test_uma_so_ocorrencia_por_posicao_apos_varias_consultas(
             cliente, usuario, filtro="ESTE_MES", mes="2026-12"
         ) == ["Mensal"]
     assert date.fromisoformat("2026-12-20")
+
+
+async def test_itens_informam_a_periodicidade(
+    cliente: httpx.AsyncClient, usuario: UsuarioTeste
+) -> None:
+    avulsa = await criar(cliente, usuario, nome="Avulsa unica")
+    await criar(
+        cliente,
+        usuario,
+        nome="Semanal toda",
+        repeticao={"periodicidade": "SEMANAL"},
+    )
+    itens = {
+        i["nome"]: i["periodicidade"]
+        for i in (await listar(cliente, usuario, limite=50))["itens"]
+    }
+    assert itens["Avulsa unica"] == "NAO_REPETIR"
+    assert itens["Semanal toda"] == "SEMANAL"
+    assert (await obter(cliente, usuario, avulsa["id"]))[
+        "periodicidade"
+    ] == "NAO_REPETIR"

@@ -1,21 +1,5 @@
-services:
-  db:
-    image: postgres:15-alpine
-    container_name: db_gestao_pessoal
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER no .env}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
-      POSTGRES_DB: ${POSTGRES_DB:?defina POSTGRES_DB no .env}
-    ports:
-      - "127.0.0.1:5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 3s
-      timeout: 3s
-      retries: 5
-
-volumes:
-  postgres_data:
+# A pilha agora vive em ../compose.yaml (banco, migrações, API, lembretes e app web).
+# Este arquivo só existe para que `docker compose up` também funcione daqui.
+include:
+  - path: ../compose.yaml
+    env_file: ../.env

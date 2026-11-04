@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 
 /// Erro de negócio com mensagem pronta para exibir ao usuário.
 class ErroApp implements Exception {
-  const ErroApp(this.mensagem, {this.campo});
+  const ErroApp(this.mensagem, {this.campo, this.codigo, this.status});
   final String mensagem;
   final String? campo;
+
+  /// Código de negócio devolvido pela API (ex.: `IMPORTANCIA_JA_PAGA`).
+  final String? codigo;
+
+  /// Status HTTP, quando o erro veio da API.
+  final int? status;
   @override
   String toString() => mensagem;
 }

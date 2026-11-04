@@ -3,7 +3,7 @@
 | Campo | Valor |
 | --- | --- |
 | Documento | `docs/arquitetura/plano_fases_api.md` |
-| Estado | F1 a F8 IMPLEMENTADAS (F4 a F8 em 2026-11-04, por decisão autônoma do implementador a pedido do usuário; ver `decisoes_f4_f5.md` e `decisoes_f6_f8.md`). F9 a F11 pendentes. Histórico: PROPOSTO. F1 **`APROVADO_COM_P3`** e integrada no commit `90412ec` (G6 cumprido em 2026-10-13). F2 **`APROVADO_COM_P3`** na auditoria de 2026-10-13 e integrada no commit `91be324` (G6 cumprido em 2026-10-13). F3 com decisões aprovadas em 2026-10-13 (DEC-MV-09 a 13 e DEC-MV-14 em escopo limitado) e Prompt F3 em `PRONTO_PARA_ETAPA_A`. Demais fases dependem das decisões pendentes |
+| Estado | F1 a F11 IMPLEMENTADAS (F4 a F11 em 2026-11-04, por decisão autônoma do implementador a pedido do usuário; ver `decisoes_f4_f5.md`, `decisoes_f6_f8.md` e `decisoes_f9_f11.md`). F4 a F11 não passaram por auditoria independente. Histórico: PROPOSTO. F1 **`APROVADO_COM_P3`** e integrada no commit `90412ec` (G6 cumprido em 2026-10-13). F2 **`APROVADO_COM_P3`** na auditoria de 2026-10-13 e integrada no commit `91be324` (G6 cumprido em 2026-10-13). F3 com decisões aprovadas em 2026-10-13 (DEC-MV-09 a 13 e DEC-MV-14 em escopo limitado) e Prompt F3 em `PRONTO_PARA_ETAPA_A`. Demais fases dependem das decisões pendentes |
 | Data | 2026-10-10. Atualizado em 2026-10-11 (nome da F8, escopo financeiro, gates da F1 e da F5) e em 2026-10-13 (estado da F1, P-DOC-07; G6 da F1 e preparação da F2; auditoria e fechamento documental da F2; G6 da F2 e preparação da F3; decisões da F3 e ficha atualizada pelo PF-1) |
 | Relacionados | ADR-0001, ADR-0002, `arquitetura_api_minhavida.md`, `plano_validacao_auditoria.md`, `matriz_requisitos_api.md` |
 
@@ -57,9 +57,9 @@ Ordem de execução (sequencial, uma fase por vez): F1 → F2 → F3 → F4 → 
 | F6 | Financeiro | DEC-MV-17 | **IMPLEMENTADA** em 2026-11-04. Decisões em `decisoes_f6_f8.md` |
 | F7 | Importâncias | DEC-MV-18, 19 | **IMPLEMENTADA** em 2026-11-04, com a migração `0002` (DESATIVADO) |
 | F8 | Vínculo interno entre despesas e importâncias | (decisões de F6/F7) | **IMPLEMENTADA** em 2026-11-04 |
-| F9 | Lembretes e notificações | DEC-MV-20 | AGUARDANDO_DECISAO |
-| F10 | Painel inicial | (decisões anteriores) | PROPOSTO |
-| F11 | Consolidação operacional | DEC-MV-21 (produção) | AGUARDANDO_DECISAO |
+| F9 | Lembretes e notificações | DEC-MV-20 | **IMPLEMENTADA** em 2026-11-04. Decisões em `decisoes_f9_f11.md` |
+| F10 | Painel inicial | (decisões anteriores) | **IMPLEMENTADA** em 2026-11-04 |
+| F11 | Consolidação operacional | DEC-MV-21 (produção) | **IMPLEMENTADA** em 2026-11-04 (limitação de login: exigência de borda, `docs/operacao/operacao.md`) |
 
 ## 4. Regras comuns a todas as fases
 

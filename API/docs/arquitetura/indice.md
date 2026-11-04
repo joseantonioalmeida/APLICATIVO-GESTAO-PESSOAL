@@ -252,3 +252,10 @@ Por instrução expressa do usuário (decidir de forma independente a partir de 
 - **F6, F7 e F8:** implementadas. DEC-MV-17, 18 e 19 resolvidas em `decisoes_f6_f8.md`. Nova migração `0002` (`DESATIVADO`); a cabeça do Alembic passa a ser `0002`.
 - Novos documentos: `decisoes_f4_f5.md` e `decisoes_f6_f8.md`. Novo código de suporte: `services/consulta_movimentacoes.py`.
 - **Pendentes:** DEC-MV-20 e 21, F9 (processador de lembretes e notificações), F10 (painel) e F11 (consolidação). Estas fases não passaram por auditoria independente.
+
+## Atualização de 2026-11-04 (F9 a F11 e integração com o aplicativo)
+
+- **F9, F10 e F11:** implementadas. DEC-MV-20 aprovada; DEC-MV-21 tratada como exigência de borda. Detalhes, desvios aditivos do contrato e resultados de desempenho em `decisoes_f9_f11.md`.
+- Novos documentos: `decisoes_f9_f11.md` e `docs/operacao/operacao.md`.
+- Novos módulos: `jobs/processar_lembretes.py`, `services/{processamento_lembretes,notificacoes,painel}.py`, `routers/{notificacoes,painel}.py`, `schemas/{notificacao,painel}.py`; testes em `tests/{lembretes,painel,integracao,desempenho}`.
+- O aplicativo Flutter (`MOBILE/`) passa a usar a API por padrão (`RepositorioApi`).

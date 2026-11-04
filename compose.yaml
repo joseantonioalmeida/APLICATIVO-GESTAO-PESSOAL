@@ -1,0 +1,117 @@
+# MinhaVida — pilha completa: banco, migrações, API, processador de lembretes
+# e (opcional) aplicativo web. Um comando sobe tudo:
+#
+#   cp .env.exemplo .env          # e preencha os segredos
+#   docker compose up -d --build  # banco + migrações + API + lembretes
+#   docker compose --profile web up -d --build   # inclui o app no navegador
+
+name: minhavida
+
+x-api: &api
+  build:
+    context: ./API
+  image: minhavida-api:local
+  env_file: .env
+  environment:
+    # Montada aqui para a senha ter um só lugar (o .env). Use senhas sem
+    # caracteres especiais de URL (ex.: openssl rand -hex 16).
+    DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    CORS_ORIGENS: '["${WEB_ORIGEM:-http://localhost:3000}"]'
+  depends_on:
+    migrar:
+      condition: service_completed_successfully
+  restart: unless-stopped
+  read_only: true
+  tmpfs:
+    - /tmp
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  logging:
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER no .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: ${POSTGRES_DB:?defina POSTGRES_DB no .env}
+    ports:
+      # Só no próprio computador (psql, DBeaver…). Apague a linha para não publicar.
+      - "127.0.0.1:${DB_PORTA:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  # Aplica as migrações uma única vez antes de API e lembretes subirem
+  # (evita corrida entre os dois). Idempotente: sem novidades, não faz nada.
+  migrar:
+    <<: *api
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    <<: *api
+    command:
+      - uvicorn
+      - api_gestao_pessoal.main:app
+      - --host=0.0.0.0
+      - --port=8000
+      - --proxy-headers
+      - --workers=${API_WORKERS:-2}
+    ports:
+      - "${API_BIND:-127.0.0.1}:${API_PORTA:-8000}:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/saude/pronto', timeout=3).status == 200 else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Gera as notificações do sino. Um processo basta; encerra com SIGTERM após
+  # o item corrente (stop_grace_period dá tempo).
+  lembretes:
+    <<: *api
+    command: ["python", "-m", "api_gestao_pessoal.jobs.processar_lembretes"]
+    init: true
+    stop_grace_period: 30s
+
+  web:
+    profiles: ["web"]
+    build:
+      context: ./MOBILE
+      args:
+        # Endereço da API como o NAVEGADOR enxerga (não o nome interno "api").
+        API_URL: ${PUBLIC_API_URL:-http://localhost:8000}
+    image: minhavida-web:local
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORTA:-3000}:8080"
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+volumes:
+  postgres_data:

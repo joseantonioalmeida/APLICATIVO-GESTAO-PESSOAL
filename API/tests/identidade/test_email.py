@@ -206,3 +206,19 @@ def test_criar_enviador() -> None:
         criar_enviador(settings_smtp(Caso("starttls", False))),
         EnviadorEmailSmtp,
     )
+
+
+async def test_modo_console_registra_a_mensagem_no_log(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    from api_gestao_pessoal.email import (  # noqa: PLC0415
+        EnviadorEmailConsole,
+        MensagemEmail,
+    )
+
+    with caplog.at_level("WARNING"):
+        await EnviadorEmailConsole().enviar(
+            MensagemEmail("a@exemplo.com", "Assunto", "código 12345678")
+        )
+    assert "12345678" in caplog.text
+    assert "a@exemplo.com" in caplog.text

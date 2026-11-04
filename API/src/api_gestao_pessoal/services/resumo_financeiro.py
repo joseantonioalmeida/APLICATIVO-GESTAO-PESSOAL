@@ -18,6 +18,7 @@ from api_gestao_pessoal.schemas.financeiro import (
     ComparacoesResposta,
     DiaGrafico,
     Intervalo,
+    MovimentacaoItem,
     ResumoFinanceiroResposta,
     Tendencia,
 )
@@ -120,7 +121,7 @@ def comparar(
     return Comparacao(**base, variacao_percentual=None, tendencia=tendencia)
 
 
-async def _comparacoes(
+async def comparacoes(
     sessao: AsyncSession, contexto: ContextoUsuario, mes: date
 ) -> ComparacoesResposta:
     intervalos = intervalos_comparacao(mes, contexto.hoje)
@@ -200,21 +201,15 @@ async def _categorias_de_despesa(
     ]
 
 
-async def resumo(
-    sessao: AsyncSession, contexto: ContextoUsuario, mes: date
-) -> ResumoFinanceiroResposta:
-    """Resumo do mês: totais, comparação, gráfico e categorias."""
-    await travar_usuario(sessao, contexto.usuario_id, ModoTrava.COMPARTILHADA)
-    inicio = primeiro_dia_mes(mes)
-    fim = ultimo_dia_do_mes(mes)
-    receitas, despesas = await totais_periodo(
-        sessao, contexto.usuario_id, inicio, fim
-    )
-    ultimas = (
+async def ultimas_movimentacoes(
+    sessao: AsyncSession, usuario_id: uuid.UUID, inicio: date, fim: date
+) -> list[MovimentacaoItem]:
+    """Até cinco movimentações do período, da mais recente à mais antiga."""
+    linhas = (
         await sessao.execute(
             consulta_base()
             .where(
-                Mov.usuario_id == contexto.usuario_id,
+                Mov.usuario_id == usuario_id,
                 Mov.excluida_em.is_(None),
                 Mov.data_movimentacao.between(inicio, fim),
             )
@@ -226,18 +221,33 @@ async def resumo(
             .limit(LIMITE_ULTIMAS)
         )
     ).all()
+    return [montar_item(linha) for linha in linhas]
+
+
+async def resumo(
+    sessao: AsyncSession, contexto: ContextoUsuario, mes: date
+) -> ResumoFinanceiroResposta:
+    """Resumo do mês: totais, comparação, gráfico e categorias."""
+    await travar_usuario(sessao, contexto.usuario_id, ModoTrava.COMPARTILHADA)
+    inicio = primeiro_dia_mes(mes)
+    fim = ultimo_dia_do_mes(mes)
+    receitas, despesas = await totais_periodo(
+        sessao, contexto.usuario_id, inicio, fim
+    )
     return ResumoFinanceiroResposta(
         mes=f"{inicio.year:04d}-{inicio.month:02d}",
         periodo=Intervalo(inicio=inicio, fim=fim),
         receitas=receitas,
         despesas=despesas,
         saldo=receitas - despesas,
-        comparacao=await _comparacoes(sessao, contexto, inicio),
+        comparacao=await comparacoes(sessao, contexto, inicio),
         grafico_diario=await _grafico_diario(
             sessao, contexto.usuario_id, inicio, fim
         ),
         categorias_despesa=await _categorias_de_despesa(
             sessao, contexto.usuario_id, inicio, fim
         ),
-        ultimas_movimentacoes=[montar_item(linha) for linha in ultimas],
+        ultimas_movimentacoes=await ultimas_movimentacoes(
+            sessao, contexto.usuario_id, inicio, fim
+        ),
     )

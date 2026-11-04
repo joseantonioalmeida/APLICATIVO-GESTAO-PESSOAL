@@ -5,7 +5,7 @@ import httpx
 from ..apoio.api import UsuarioTeste
 from ..apoio.esquema import consultar
 from ..apoio.identidade import codigo_de_erro
-from .util import URL, criar, listar, nomes_do_dia
+from .util import HOJE, URL, criar, listar, nomes_do_dia
 
 SEMANAL = {
     "periodicidade": "SEMANAL",
@@ -355,3 +355,22 @@ async def test_pendencias_de_serie_antiga(
     )
     # Dias 10, 11 e 12 de outubro, todos pendentes.
     assert r.json() == {"quantidade": 3, "data_mais_antiga": "2026-10-10"}
+
+
+async def test_itens_informam_a_periodicidade(
+    cliente: httpx.AsyncClient, usuario: UsuarioTeste
+) -> None:
+    await criar(cliente, usuario, nome="Avulsa unica")
+    await criar(
+        cliente,
+        usuario,
+        nome="Diaria toda",
+        horario_inicial="11:00",
+        horario_final="12:00",
+        repeticao={"periodicidade": "DIARIA", "termino": "SEM_DATA_FINAL"},
+    )
+    r = await cliente.get(
+        URL, params={"data": HOJE, "limite": 50}, headers=usuario.cabecalhos
+    )
+    itens = {i["nome"]: i["periodicidade"] for i in r.json()["itens"]}
+    assert itens == {"Avulsa unica": "NAO_REPETIR", "Diaria toda": "DIARIA"}
