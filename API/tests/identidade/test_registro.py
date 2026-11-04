@@ -162,6 +162,22 @@ CASOS_INVALIDOS = [
     ),
     pytest.param(
         Caso(
+            {"nome_completo": "Ana\u2028Silva"},
+            "nome_completo",
+            "NOME_COMPLETO_INVALIDO",
+        ),
+        id="nome_com_separador_de_linha_unicode",
+    ),
+    pytest.param(
+        Caso(
+            {"nome_completo": "Ana\u2029Silva"},
+            "nome_completo",
+            "NOME_COMPLETO_INVALIDO",
+        ),
+        id="nome_com_separador_de_paragrafo_unicode",
+    ),
+    pytest.param(
+        Caso(
             {"data_nascimento": "1990-1-1"}, "data_nascimento", "DATA_INVALIDA"
         ),
         id="data_sem_zeros",

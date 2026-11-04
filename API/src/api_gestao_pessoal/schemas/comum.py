@@ -2,10 +2,12 @@
 
 import enum
 import re
+from collections.abc import Callable
 from datetime import date, datetime, time
-from typing import Annotated
+from decimal import Decimal
+from typing import Annotated, LiteralString
 
-from pydantic import BaseModel, BeforeValidator
+from pydantic import BaseModel, BeforeValidator, PlainSerializer
 from pydantic_core import PydanticCustomError
 
 PADRAO_HORARIO = re.compile(r"([01][0-9]|2[0-3]):[0-5][0-9]")
@@ -67,3 +69,51 @@ class AlcanceSerie(enum.StrEnum):
 
     SOMENTE_ESTA = "SOMENTE_ESTA"
     ESTA_E_PROXIMAS = "ESTA_E_PROXIMAS"
+
+
+PADRAO_VALOR = re.compile(r"[0-9]+(\.[0-9]+)?")
+MENSAGEM_CASAS = "Informe um valor com até duas casas decimais"
+MENSAGEM_LIMITE = "O valor máximo por lançamento é R$ 9.999.999.999,99"
+DIGITOS_INTEIROS_MAXIMOS = 10
+CASAS_DECIMAIS_MAXIMAS = 2
+
+
+def conversor_valor(
+    codigo: LiteralString, mensagem: LiteralString
+) -> Callable[[object], Decimal]:
+    """Fábrica de validadores de dinheiro (string decimal, D-16).
+
+    `codigo`/`mensagem` descrevem o erro de valor ausente, zero, negativo
+    ou fora do formato (ex.: `VALOR_OBRIGATORIO`). Número JSON é rejeitado.
+    """
+
+    def converter(valor: object) -> Decimal:
+        if isinstance(valor, Decimal):
+            texto = format(valor, "f")
+        elif isinstance(valor, str):
+            texto = valor.strip()
+        else:
+            raise PydanticCustomError(codigo, mensagem)
+        if not PADRAO_VALOR.fullmatch(texto):
+            raise PydanticCustomError(codigo, mensagem)
+        inteiro, _, decimais = texto.partition(".")
+        if len(decimais.rstrip("0")) > CASAS_DECIMAIS_MAXIMAS:
+            raise PydanticCustomError("CASAS_DECIMAIS", MENSAGEM_CASAS)
+        if len(inteiro.lstrip("0")) > DIGITOS_INTEIROS_MAXIMOS:
+            raise PydanticCustomError("VALOR_ACIMA_DO_LIMITE", MENSAGEM_LIMITE)
+        resultado = Decimal(texto).quantize(Decimal("0.01"))
+        if resultado <= 0:
+            raise PydanticCustomError(codigo, mensagem)
+        return resultado
+
+    return converter
+
+
+def formatar_dinheiro(valor: Decimal) -> str:
+    """Sempre com duas casas: `Decimal("1220.3")` -> `"1220.30"`."""
+    return format(valor.quantize(Decimal("0.01")), "f")
+
+
+DinheiroSaida = Annotated[
+    Decimal, PlainSerializer(formatar_dinheiro, return_type=str)
+]

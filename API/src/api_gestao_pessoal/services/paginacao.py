@@ -62,3 +62,8 @@ def decodificar_cursor(
     ):
         raise erro
     return corpo["k"]
+
+
+def escapar_busca(texto: str) -> str:
+    """Escapa `\\`, `%` e `_` para `ILIKE ... ESCAPE '\\'`."""
+    return texto.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")

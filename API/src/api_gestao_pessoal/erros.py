@@ -50,6 +50,18 @@ class CodigoErro(StrEnum):
     SOBREPOSICAO_HORARIO = "SOBREPOSICAO_HORARIO"
     ALCANCE_INVALIDO = "ALCANCE_INVALIDO"
     REPETICAO_EXIGE_ALCANCE_SERIE = "REPETICAO_EXIGE_ALCANCE_SERIE"
+    CONCLUSAO_EXIGE_PAGAMENTO = "CONCLUSAO_EXIGE_PAGAMENTO"
+    REABERTURA_EXIGE_REMOVER_PAGAMENTO = "REABERTURA_EXIGE_REMOVER_PAGAMENTO"
+    IMPORTANCIA_CONCLUIDA_SEM_ALTERAR_DESPESA = (
+        "IMPORTANCIA_CONCLUIDA_SEM_ALTERAR_DESPESA"
+    )
+    IMPORTANCIA_PAGA_SEM_ALTERAR_DESPESA = (
+        "IMPORTANCIA_PAGA_SEM_ALTERAR_DESPESA"
+    )
+    IMPORTANCIA_JA_PAGA = "IMPORTANCIA_JA_PAGA"
+    DESPESA_JA_VINCULADA = "DESPESA_JA_VINCULADA"
+    IMPORTANCIA_SEM_DESPESA = "IMPORTANCIA_SEM_DESPESA"
+    CONFIRMACAO_VINCULO_NECESSARIA = "CONFIRMACAO_VINCULO_NECESSARIA"
 
 
 CATALOGO_ERROS: dict[CodigoErro, tuple[HTTPStatus, str]] = {
@@ -166,6 +178,44 @@ CATALOGO_ERROS: dict[CodigoErro, tuple[HTTPStatus, str]] = {
     CodigoErro.REPETICAO_EXIGE_ALCANCE_SERIE: (
         HTTPStatus.UNPROCESSABLE_CONTENT,
         "Para alterar a repetição, escolha “Esta e as próximas pendentes”.",
+    ),
+    CodigoErro.CONCLUSAO_EXIGE_PAGAMENTO: (
+        HTTPStatus.CONFLICT,
+        "Importâncias com despesa são concluídas pelo registro do pagamento.",
+    ),
+    CodigoErro.REABERTURA_EXIGE_REMOVER_PAGAMENTO: (
+        HTTPStatus.CONFLICT,
+        "Para reabrir uma importância paga, exclua ou desvincule a despesa.",
+    ),
+    CodigoErro.IMPORTANCIA_CONCLUIDA_SEM_ALTERAR_DESPESA: (
+        HTTPStatus.CONFLICT,
+        "Reabra a importância antes de alterar “Possui despesa?”.",
+    ),
+    CodigoErro.IMPORTANCIA_PAGA_SEM_ALTERAR_DESPESA: (
+        HTTPStatus.CONFLICT,
+        (
+            "Esta importância possui pagamento vinculado. "
+            "Altere o pagamento em “Ver despesa”."
+        ),
+    ),
+    CodigoErro.IMPORTANCIA_JA_PAGA: (
+        HTTPStatus.CONFLICT,
+        "Esta importância já possui um pagamento registrado",
+    ),
+    CodigoErro.DESPESA_JA_VINCULADA: (
+        HTTPStatus.CONFLICT,
+        "Esta despesa já está vinculada a outra importância.",
+    ),
+    CodigoErro.IMPORTANCIA_SEM_DESPESA: (
+        HTTPStatus.CONFLICT,
+        "Esta importância não possui despesa.",
+    ),
+    CodigoErro.CONFIRMACAO_VINCULO_NECESSARIA: (
+        HTTPStatus.CONFLICT,
+        (
+            "Confirme a alteração do vínculo: a importância anterior "
+            "voltará a ficar pendente."
+        ),
     ),
 }
 

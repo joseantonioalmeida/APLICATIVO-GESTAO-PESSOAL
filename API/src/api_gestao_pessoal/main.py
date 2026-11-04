@@ -15,6 +15,7 @@ from api_gestao_pessoal.routers import (
     atividades,
     autenticacao,
     categorias,
+    financeiro,
     saude,
     usuarios,
 )
@@ -58,6 +59,7 @@ def criar_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(usuarios.router, prefix="/api/v1")
     app.include_router(categorias.router, prefix="/api/v1")
     app.include_router(atividades.router, prefix="/api/v1")
+    app.include_router(financeiro.router, prefix="/api/v1")
     return app
 
 
