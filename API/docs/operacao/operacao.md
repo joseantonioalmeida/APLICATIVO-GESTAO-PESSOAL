@@ -12,6 +12,10 @@ Guia independente de plataforma (a plataforma de deploy ainda não foi escolhida
 
 Saúde: `GET /saude` (liveness) e `GET /saude/pronto` (readiness com `SELECT 1`).
 
+### Contêineres
+
+O `compose.yaml` da raiz define `db`, `migrar` (uma vez), `api` (2 *workers*, `/saude/pronto` como healthcheck), `lembretes` (com `init` e 30 s de encerramento) e `web` (perfil opcional). Imagem da API: multiestágio, usuário sem privilégios, sistema de arquivos somente leitura, sem *capabilities*. Para produção, use `AMBIENTE=producao` e SMTP no `.env`, `API_BIND`/`WEB_BIND` atrás do proxy com TLS e remova a publicação da porta do banco.
+
 ## 2. Configuração (variáveis de ambiente / `.env`)
 
 Obrigatórias em produção: `DATABASE_URL` (`postgresql+psycopg://…`), `JWT_SEGREDO` (≥ 32 bytes, gere com `python -c "import secrets; print(secrets.token_urlsafe(32))"`), `AMBIENTE=producao`, `EMAIL_MODO=smtp` com `SMTP_HOST`, `SMTP_REMETENTE` (e credenciais se houver) e `SMTP_SEGURANCA` diferente de `nenhuma`.

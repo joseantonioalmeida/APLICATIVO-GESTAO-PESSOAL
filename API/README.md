@@ -3,9 +3,16 @@
 FastAPI + SQLAlchemy (async) + PostgreSQL. Documentação em `docs/` e prompts em `PROMPTS/`.
 
 ## Executar
+Tudo em contêineres (banco, migrações, API e processador de lembretes), pela raiz do repositório:
 ```bash
-cp .env.exemplo .env      # preencha os valores (JWT_SEGREDO é obrigatório)
-docker compose up -d      # PostgreSQL
+cd ..                      # raiz do repositório
+cp .env.exemplo .env       # preencha POSTGRES_PASSWORD e JWT_SEGREDO
+docker compose up -d --build
+```
+Veja o `README.md` da raiz. Sem contêiner da API (desenvolvimento com recarga automática):
+```bash
+docker compose up -d db    # só o banco (na raiz)
+cp .env.exemplo .env       # neste diretório, para o uv run (DATABASE_URL com 127.0.0.1)
 uv sync
 uv run alembic upgrade head
 uv run fastapi dev src/api_gestao_pessoal/main.py

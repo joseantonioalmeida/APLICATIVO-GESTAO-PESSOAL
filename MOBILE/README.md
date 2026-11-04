@@ -5,6 +5,8 @@ Atividades, Cadastrar atividade, Importâncias, Cadastrar importância, Financei
 Cadastrar receita e Cadastrar despesa), implementadas conforme o `API/CLAUDE.md`.
 
 ## Executar
+O caminho mais simples é tudo em contêiner (veja o `README.md` da raiz: `docker compose --profile web up -d --build`, app em http://localhost:3000). Abaixo, a execução com o Flutter instalado.
+
 O aplicativo usa a **API** (pasta `../API`) por padrão. Suba a API antes (veja `API/README.md`;
 para testar "Esqueceu a senha" use `EMAIL_MODO=console` e leia o código no log da API) e rode:
 ```bash
