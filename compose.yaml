@@ -44,7 +44,10 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      # "-h 127.0.0.1" testa a porta TCP. Na primeira inicialização a imagem
+      # sobe um servidor temporário só por socket; sem o -h o banco pareceria
+      # pronto cedo demais e a migração falharia.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 10
